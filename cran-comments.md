@@ -71,7 +71,7 @@ Please accept my apologies for the short period since last submission (23 days).
 
 ### R CMD check results
 * There were no ERRORs or WARNINGs. 
-* There was 1 NOTE: Maintainer: 'Adrian Timpson <a.timpson@ucl.ac.uk>' Found the following (possibly) invalid URLs: URL: https://doi.org/10.1098/rstb.2019.0723 
+* There was 1 NOTE: Maintainer: 'Adrian Timpson <a.timpson@ucl.ac.uk>' Found the following (possibly) invalid URLs: URL: https://doi.org/10.1098/rstb.2019.0723
 
 ### Downstream dependencies
 I have also run R CMD check on downstream dependencies of ADMUR 

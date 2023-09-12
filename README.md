@@ -46,7 +46,7 @@ Please contact a.timpson@ucl.ac.uk  in the first instance to make suggestions, r
 
 This package accompanies the following paper:
 
-Timpson A., Barberena R., Thomas M. G., Mendez C., Manning K. 2020. "Directly modelling population dynamics in the South American Arid Diagonal using 14C dates",Philosophical Transactions B. <https://royalsocietypublishing.org/doi/10.1098/rstb.2019.0723>.
+Timpson A., Barberena R., Thomas M. G., Mendez C., Manning K. 2020. "Directly modelling population dynamics in the South American Arid Diagonal using 14C dates",Philosophical Transactions B. <https://doi.org/10.1098/rstb.2019.0723>.
 
 Citations available as follows:
 ``` r
