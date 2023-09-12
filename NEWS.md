@@ -14,6 +14,7 @@
 * fast rollmean function.
 * removed dependency on 'scales' package.
 * removed dependency on 'grDevices' package by using greyscale instead
+* removed dependency on various other bits, bringing minimum R version down to 3.3.0
 
 ### Version: 1.0.3.9004
 
