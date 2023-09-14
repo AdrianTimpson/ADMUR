@@ -18,7 +18,8 @@
 	A vector of parameter values for the algorithm to start at. Suggest using the parameters found from a Maximum Likelihood search. Must have an odd length with values between 0 and 1 for an n-CPL model, or length 1 values between -0.1 and 0.1 for an exponential model.
 	}
   \item{type}{
-	Choose from  the following currently available \code{\link[=getModelChoices]{models}}. Composite models can be achieved using a vector of more than one type. For example, c('norm','power') will be a composite model, where the first two parameters are the mean and SD, the 3rd and 4th parameters determine the power distribution component, for example if modelling taphonomy.
+	Choose from the following currently available \code{\link[=getTruncatedModelChoices]{truncated models}} when modelling underlying population dynamics across a specified time range. Composite models can be achieved using a vector of more than one type. For example, c('norm','power') will be a composite model, where the first two parameters are the mean and SD, the 3rd and 4th parameters determine the power distribution component, for example if modelling taphonomy.
+	Alternatively, choose from currently available \code{\link[=getPhaseModelChoices]{phase models}} when modelling the range of an archaeological phase, or some other temporal entity that starts and ends.
 	}
 	\item{timeseries}{
 	Only if 'type' = 'timeseries', a data frame should be provided containing columns x and y that define the timeseries as year and value respectively.

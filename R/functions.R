@@ -6,11 +6,11 @@
 # global variables
 if(getRversion() >= "2.15.1")  utils::globalVariables(c('age','datingType','site','calBP','phase','intcal20'))
 #--------------------------------------------------------------------------------------------
-getModelChoices <- function(){
+getTruncatedModelChoices <- function(){
 	# list is required in several functions, so avoids duplication if others are added to the package
 	# also provides the expected number of parameters for each, excpt CPL which can be any odd number of pars
-	names <- c('CPL','uniform','norm','exp','logistic','sine','cauchy','power','timeseries','ellipse')
-	n.pars <- c(NA,1,2,1,2,3,2,2,1,NA)
+	names <- c('CPL','uniform','norm','exp','logistic','sine','cauchy','power','timeseries')
+	n.pars <- c(NA,1,2,1,2,3,2,2,1)
 	pars <- c(	'hinge coordinates',
 				'NA',
 				'mean; SD',
@@ -19,8 +19,7 @@ getModelChoices <- function(){
 				'frequency (f); cycle position in radians at x=0 (p); numeric between 0 and 1 determining how flat the distribution is (r)',
 				'centre location (x_0); scale (gamma)',
 				'b; c',
-				'scaling (r)',
-				'NA')
+				'scaling (r)')
 	description <- c(	'Contnuous Piecewise Linear model: any positive odd number of parameters, to define the free hinge points',
 						'Uniform model: a flat PDF requiring no parameters. I.e. the argument pars must be NA',
 						'Gaussian model: aka a normal distribution',
@@ -29,8 +28,7 @@ getModelChoices <- function(){
 						'Sinusoidal model: a regularly oscillating PDF, always positive',
 						'Cauchy model: fatter tailed than Gaussians, which are arguably better descriptions of real data',
 						'Power function model',
-						'Timeseries model: an independent timeseries that is hypothesised to be a model for the timeseries being studied',
-						'Semi-ellipse: The positive (top) half of an ellipse. I.e. the argument pars must be NA')
+						'Timeseries model: an independent timeseries that is hypothesised to be a model for the timeseries being studied')
 	model.choices <- data.frame(names=names,n.pars=n.pars,pars=pars,description=description)
 return(model.choices)}
 #--------------------------------------------------------------------------------------------
@@ -496,7 +494,7 @@ convertPars <- function(pars, years, type, timeseries=NULL){
 	if(!is.matrix(pars))pars <- t(as.matrix(pars))
 
 	# sanity checks
-	model.choices <- getModelChoices()$names
+	model.choices <- getTruncatedModelChoices()$names
 	if(sum(type=='CPL')>1)stop('multiple CPL models makes no sense, run a single CPL with more parameters')
 	if(sum(!type%in%model.choices)!=0)stop(paste('Unknown model type. Choose from:',paste(model.choices,collapse=', ')))
 	if(!is.numeric(years))stop('years must be a numeric vector')
@@ -505,7 +503,7 @@ convertPars <- function(pars, years, type, timeseries=NULL){
 		}
 
 	# convert parameters to a list, accounting for the fact that CPL can have any odd number of parameters
-	MC <- getModelChoices()
+	MC <- getTruncatedModelChoices()
 	x <- MC$n.pars[MC$names%in%type]
 	if('CPL'%in%type){
 		n.pars.cpl <- ncol(pars) - sum(x,na.rm=T)
@@ -677,7 +675,7 @@ return(new.pars)}
 #--------------------------------------------------------------------------------------------
 mcmc <- function(PDarray, startPars, type, timeseries=NULL, N = 30000, burn = 2000, thin = 5, jumps = 0.02){ 
 
-	model.choices <- getModelChoices()$names
+	model.choices <- getTruncatedModelChoices()$names
 	if(sum(!type%in%model.choices)!=0)stop(paste('Unknown model type. Choose from:',paste(model.choices,collapse=', ')))
 
 	# starting parameters
@@ -943,13 +941,6 @@ return(pdf)}
 powerPDF <- function(x,min,max,b,c){
 	num <- (c+1)*(b+x)^c
 	denom <- (b+max)*(c+1) - (b+min)*(c+1)
-	pdf <- num/denom
-return(pdf)}
-#----------------------------------------------------------------------------------------------
-ellipsePDF <- function(x,min,max){
-	radius <- (max-min)/2
-	num <- sqrt( radius^2 - (x-((max+min)/2))^2)
-	denom <- 0.5 * pi * radius^2
 	pdf <- num/denom
 return(pdf)}
 #----------------------------------------------------------------------------------------------

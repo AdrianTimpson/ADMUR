@@ -1,14 +1,21 @@
-\name{getModelChoices} 
-\alias{getModelChoices} 
+\name{getTruncatedModelChoices} 
+\alias{getTruncatedModelChoices} 
 \title{Lists currently available models} 
 \description{
 	Lists currently available models, the number of parameters, and a brief description
 	\loadmathjax }
-\usage{getModelChoices()}
+\usage{getTruncatedModelChoices()}
 
 \details{
 
-All models are truncated, such that the total area between \mjseqn{x_{min}} and \mjseqn{x_{max}} (the date range of the argument 'years') equals 1.  
+All the following models are truncated, such that the the total area (probability mass) between \mjseqn{x_{min}} and \mjseqn{x_{max}} equals 1. 
+These limits (\mjseqn{x_{min}} and \mjseqn{x_{max}}) are date range of the argument 'years', which is specified by the user. 
+The user is therefore free to specify any date range of interest in which to model the underlying popluation dynamics of the overall data.
+For example, the full radiocarbon dataset may cover a wide range, with dates between 30,000 BP and 500 BP, but the user may wish to model a narrow the model range, for several reasons, such as
+1) the sampling intensity when accruing the dataset is only reliable over a narrow range (research bias); 2) to avoid edge effects.
+
+As such, these models are not appropriate for modelling archaeological phases, which by their very nature have a start and end (or at least wax and wane into and out of existance).
+For phase modelling, see 
 
 \itemize{
 
@@ -61,5 +68,5 @@ where \mjseqn{x =} years, and \mjseqn{x_{min}} and \mjseqn{x_{max}} determine th
 
 }
 \examples{
-	getModelChoices()
+	getTruncatedModelChoices()
 	}
