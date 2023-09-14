@@ -9,8 +9,8 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c('age','datingType','site
 getModelChoices <- function(){
 	# list is required in several functions, so avoids duplication if others are added to the package
 	# also provides the expected number of parameters for each, excpt CPL which can be any odd number of pars
-	names <- c('CPL','uniform','norm','exp','logistic','sine','cauchy','power','timeseries')
-	n.pars <- c(NA,1,2,1,2,3,2,2,1)
+	names <- c('CPL','uniform','norm','exp','logistic','sine','cauchy','power','timeseries','ellipse')
+	n.pars <- c(NA,1,2,1,2,3,2,2,1,NA)
 	pars <- c(	'hinge coordinates',
 				'NA',
 				'mean; SD',
@@ -19,16 +19,18 @@ getModelChoices <- function(){
 				'frequency (f); cycle position in radians at x=0 (p); numeric between 0 and 1 determining how flat the distribution is (r)',
 				'centre location (x_0); scale (gamma)',
 				'b; c',
-				'scaling (r)')
+				'scaling (r)',
+				'NA')
 	description <- c(	'Contnuous Piecewise Linear model: any positive odd number of parameters, to define the free hinge points',
-						'Uniform model: a flat PDF requiring no parameters. I.e. the argument pars must be NULL',
+						'Uniform model: a flat PDF requiring no parameters. I.e. the argument pars must be NA',
 						'Gaussian model: aka a normal distribution',
 						'Exponential model: can be growth or decay',
 						'Logistic model: a sigmoidal model often used for growth from an initial founder event to a maximum carrying capacity',
 						'Sinusoidal model: a regularly oscillating PDF, always positive',
 						'Cauchy model: fatter tailed than Gaussians, which are arguably better descriptions of real data',
 						'Power function model',
-						'Timeseries model: an independent timeseries that is hypothesised to be a model for the timeseries being studied')
+						'Timeseries model: an independent timeseries that is hypothesised to be a model for the timeseries being studied',
+						'Semi-ellipse: The positive (top) half of an ellipse. I.e. the argument pars must be NA')
 	model.choices <- data.frame(names=names,n.pars=n.pars,pars=pars,description=description)
 return(model.choices)}
 #--------------------------------------------------------------------------------------------
@@ -37,8 +39,7 @@ checkDataStructure <- function(data){
 	# helper function to check format of data, and throw warnings
 
 	x <- 'good'
-	if(!is(data,'data.frame')){warning('data must be a data.frame');return('bad')}
-	if(sum(names(data)%in%c('age','sd'))!=2){warning("data must include 'age' and 'sd'");return('bad')}
+	if(sum(names(data)%in%c('age','sd'))!=2){warning("data frame must include 'age' and 'sd'");return('bad')}
 	if(!is.numeric(data$age)){warning('age must be numeric');return('bad')}	
 	if(!is.numeric(data$sd)){warning('sd must be numeric');return('bad')}		
 	if(min(data$age)<0){warning('some ages are negative');return('bad')}			
@@ -492,16 +493,15 @@ return(loglik)}
 convertPars <- function(pars, years, type, timeseries=NULL){
 
 	# ensure pars are a matrix
-	if(!is(pars,'matrix'))pars <- t(as.matrix(pars))
+	if(!is.matrix(pars))pars <- t(as.matrix(pars))
 
 	# sanity checks
 	model.choices <- getModelChoices()$names
 	if(sum(type=='CPL')>1)stop('multiple CPL models makes no sense, run a single CPL with more parameters')
 	if(sum(!type%in%model.choices)!=0)stop(paste('Unknown model type. Choose from:',paste(model.choices,collapse=', ')))
-	if(!is(years,'numeric'))stop('years must be a numeric vector')
+	if(!is.numeric(years))stop('years must be a numeric vector')
 	if(!is.null(timeseries)){
-		if(!is(timeseries,'data.frame'))stop('timeseries must be a data frame')
-		if(sum(c('x','y')%in%names(timeseries))!=2)stop('timeseries must include x and y')
+		if(sum(c('x','y')%in%names(timeseries))!=2)stop('timeseries data frame must include x and y')
 		}
 
 	# convert parameters to a list, accounting for the fact that CPL can have any odd number of parameters
@@ -573,6 +573,11 @@ convertParsInner  <- function(model.pars, years, type, timeseries){
 		if(length(model.pars)!=1)stop('A timeseries model must have a single scaling parameter')
 		tmp <- timeseriesPDF(years, min(years), max(years),model.pars[1], timeseries)
 		}
+	if(type=='ellipsePDF'){
+		if(!is.na(model.pars))stop('An ellipse model must have a single NA parameter')
+		tmp <- ellipsePDF(years, min(years), max(years))
+		}
+		
 
 	inc <- years[2]-years[1]
 	pdf <- tmp/(sum(tmp)*inc)
@@ -581,7 +586,7 @@ return(pdf)}
 #--------------------------------------------------------------------------------------------
 CPLparsToHinges <- function(pars, years){
 
-	if(is(pars,'numeric')){
+	if(!is.matrix(pars)){
 		res <- CPLparsToHingesInner(pars, years)
 		return(res)}
 
@@ -846,7 +851,7 @@ return(list(timeseries=timeseries,
 #--------------------------------------------------------------------------------------------
 relativeDeclineRate <- function(x, y, generation, N){
 
-	if(is(x,'numeric')){
+	if(!is.matrix(x)){
 		x <- sort(x, decreasing=T)
 		y <- sort(y, decreasing=T)
 		X <- seq(x[1],x[2], length.out=N)
@@ -855,7 +860,7 @@ relativeDeclineRate <- function(x, y, generation, N){
 		res <- 100*(mean(k)-1)
 		}
 
-	if(!is(x,'numeric')){
+	if(is.matrix(x)){
 		x <- t(apply(x, MARGIN=1, FUN=sort, decreasing=T))
 		y <- t(apply(y, MARGIN=1, FUN=sort, decreasing=T))
 		C <- nrow(x)
@@ -872,14 +877,14 @@ return(res)	}
 #----------------------------------------------------------------------------------------------
 relativeRate <- function(x, y, generation=25, N=1000){
 
-	if(is(x,'numeric')){
+	if(!is.matrix(x)){
 		grad <- diff(y)/diff(x)
 		if(grad==0)return(0)
 		res <- relativeDeclineRate(x, y, generation, N)
 		if(grad<0)res <- res*(-1)
 		}
 
-	if(!is(x,'numeric')){
+	if(is.matrix(x)){
 		grad <- apply(x, MARGIN=1, FUN=diff)/apply(y, MARGIN=1, FUN=diff)
 		res <- relativeDeclineRate(x, y, generation, N)
 		res[grad<0] <- res[grad<0]*(-1) 
@@ -938,6 +943,13 @@ return(pdf)}
 powerPDF <- function(x,min,max,b,c){
 	num <- (c+1)*(b+x)^c
 	denom <- (b+max)*(c+1) - (b+min)*(c+1)
+	pdf <- num/denom
+return(pdf)}
+#----------------------------------------------------------------------------------------------
+ellipsePDF <- function(x,min,max){
+	radius <- (max-min)/2
+	num <- sqrt( radius^2 - (x-((max+min)/2))^2)
+	denom <- 0.5 * pi * radius^2
 	pdf <- num/denom
 return(pdf)}
 #----------------------------------------------------------------------------------------------

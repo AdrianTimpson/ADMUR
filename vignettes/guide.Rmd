@@ -393,7 +393,6 @@ relative <- relativeRate(x,y)
 plot(conventional, relative, type='l')
 rect(-100,-100,c(10,0,-10),c(10,0,-10), lty=2,border='grey')
 ```
-
 **********
 
 # 4. Inference

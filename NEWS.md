@@ -9,12 +9,20 @@
 
 ### Version: 1.0.3.9005
 
+## 2023-09-13
+* semi-ellipse model added.
+
+## 2023-09-12
+* removed dependency on 'methods' package.
+
+## 2023-09-12
+* removed dependency on various other bits, bringing minimum R version down to 3.3.0
+
 ## 2023-09-06
 * removed dependency on 'zoo' package.
 * fast rollmean function.
 * removed dependency on 'scales' package.
 * removed dependency on 'grDevices' package by using greyscale instead
-* removed dependency on various other bits, bringing minimum R version down to 3.3.0
 
 ### Version: 1.0.3.9004
 

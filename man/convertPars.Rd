@@ -98,4 +98,8 @@ The structure of the output differs depending on if converting a vector or matri
 	# the parameter for the uniform component must be set to NA
 	pars <- c(NA, runif(2, c(0,-3), c(20000,0)))
 	x <- convertPars(pars=pars, years=5500:7500, type=c('uniform','power'))
+
+	# a ellipse model also requires no parameters, 
+	# so pars must be set to NA
+	x <- convertPars(pars=NA, years=5500:7500, type='ellipse')
 	}
