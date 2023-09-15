@@ -1,6 +1,6 @@
 \name{getTruncatedModelChoices} 
 \alias{getTruncatedModelChoices} 
-\title{Lists currently available models} 
+\title{Lists currently available models for population dynamics} 
 \description{
 	Lists currently available models, the number of parameters, and a brief description
 	\loadmathjax }
@@ -9,13 +9,12 @@
 \details{
 
 All the following models are truncated, such that the the total area (probability mass) between \mjseqn{x_{min}} and \mjseqn{x_{max}} equals 1. 
-These limits (\mjseqn{x_{min}} and \mjseqn{x_{max}}) are date range of the argument 'years', which is specified by the user. 
+These limits (\mjseqn{x_{min}} and \mjseqn{x_{max}}) are the date range of the argument 'years', which is specified by the user. 
 The user is therefore free to specify any date range of interest in which to model the underlying popluation dynamics of the overall data.
 For example, the full radiocarbon dataset may cover a wide range, with dates between 30,000 BP and 500 BP, but the user may wish to model a narrow the model range, for several reasons, such as
 1) the sampling intensity when accruing the dataset is only reliable over a narrow range (research bias); 2) to avoid edge effects.
 
 As such, these models are not appropriate for modelling archaeological phases, which by their very nature have a start and end (or at least wax and wane into and out of existance).
-For phase modelling, see 
 
 \itemize{
 
@@ -23,7 +22,7 @@ For phase modelling, see
 'CPL' is a Continuous Piecewise Linear model. It must have an odd number of parameters, each with a value between 0 and 1. A n-CPL model has \mjseqn{2n-1} parameters (\mjseqn{n-1} x-parameters and \mjseqn{n} y-parameters) that are mapped to \mjseqn{n+1} PD coordinates (x,y pairs) using a modified Stick Breaking Dirichlet Process. The first and last x-coordinate are set as \mjseqn{x_{min}} and \mjseqn{x_{max}}, and the remaining internal x-coordinates are converted from their respective x-parameters using the Beta distribution CDF (where \mjseqn{\alpha = 1} and \mjseqn{\beta =} the number of pieces still to be broken). The y-parameters (between 0 and 1) are converted to y-coordinates in two steps. Firstly, they are mapped from the parameter range (0,1) to the coordinate range (0, \mjseqn{\infty}) using the formula \mjseqn{\frac{1}{(1 - y)^2} - 1}, and the single remaining y-coordinate is set as \mjseqn{\frac{1}{(1 - 0.5)^2} - 1}. Secondly, they are normalised by the total area under the curve, calculated as the sum of the areas under all \mjseqn{n} pieces: \mjsdeqn{Area = \sum_{i=1}^{n} (\frac{y_i + y_{i+1}}{2})(x_{i+1} - x_i) }
 
 \item
-'uniform' is a uniform model requiring no parameters. I.e. the argument pars must be NULL, and trivially the PDF is: \mjsdeqn{\frac{1}{x_{max} - x_{min}}}
+'uniform' is a uniform model requiring no parameters. I.e. the argument pars must be NA, and trivially the PDF is: \mjsdeqn{\frac{1}{x_{max} - x_{min}}}
 
 \item 
 'norm' is a truncated Gaussian model. The two parameters are used as \mjseqn{\mu} and \mjseqn{\sigma} in the formula for a truncated Normal distribution, the PDF of which is calculated in two steps. Firstly, the PDF of an ordinary Normal distribution is calculated. Secondly, it is normalised by the area within the date range.
@@ -57,7 +56,7 @@ where \mjseqn{x =} years, and \mjseqn{x_{min}} and \mjseqn{x_{max}} determine th
 \mjseqn{r} determines how flat the distribution is, and must be a numeric between 0 and 1.
 
 \item 
-'cauchy' is a truncated Cauchy model. The two parameters are used as \mjseqn{x_0} (location) and \mjseqn{\gamma} (scale) in the formula for a truncated Cauchy distribution. The PDF is as follows where \mjseqn{x =} years: \mjsdeqn{\frac{1}{\gamma[1+(\frac{x-x_0}{\gamma})^2][\arctan(\frac{x_0-x_{min}}{\gamma})-\arctan(\frac{x_0-x_{max}}{\gamma})]}}  
+'cauchy' is a truncated Cauchy model. The two parameters are used as \mjseqn{l} (location) and \mjseqn{s} (scale) in the formula for a truncated Cauchy distribution. The PDF is as follows where \mjseqn{x =} years: \mjsdeqn{\frac{1}{sa[1+(\frac{x-l}{s})^2][\arctan(\frac{l-x_{min}}{s})-\arctan(\frac{l-x_{max}}{s})]}}  
 
 \item 
 'power' is a truncated Power function model of the form \mjseqn{f(x)=a(b+x)^c} where \mjseqn{x =} years.  The PDF is as follows. Note the \mjseqn{a} parameter cancels out: \mjsdeqn{\frac{(c+1)(b+x)^c}{(b+x_{max})^{(c+1)} - (b+x_{min})^{(c+1)}}}

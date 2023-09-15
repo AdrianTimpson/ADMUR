@@ -7,7 +7,7 @@
 if(getRversion() >= "2.15.1")  utils::globalVariables(c('age','datingType','site','calBP','phase','intcal20'))
 #--------------------------------------------------------------------------------------------
 getTruncatedModelChoices <- function(){
-	# list is required in several functions, so avoids duplication if others are added to the package
+	# Required in several functions, so avoids duplication if others are added to the package
 	# also provides the expected number of parameters for each, excpt CPL which can be any odd number of pars
 	names <- c('CPL','uniform','norm','exp','logistic','sine','cauchy','power','timeseries')
 	n.pars <- c(NA,1,2,1,2,3,2,2,1)
@@ -17,18 +17,29 @@ getTruncatedModelChoices <- function(){
 				'rate (r)',
 				'rate (k); centre (x_0)',
 				'frequency (f); cycle position in radians at x=0 (p); numeric between 0 and 1 determining how flat the distribution is (r)',
-				'centre location (x_0); scale (gamma)',
+				'centre location (l); scale (s)',
 				'b; c',
 				'scaling (r)')
-	description <- c(	'Contnuous Piecewise Linear model: any positive odd number of parameters, to define the free hinge points',
-						'Uniform model: a flat PDF requiring no parameters. I.e. the argument pars must be NA',
-						'Gaussian model: aka a normal distribution',
-						'Exponential model: can be growth or decay',
-						'Logistic model: a sigmoidal model often used for growth from an initial founder event to a maximum carrying capacity',
-						'Sinusoidal model: a regularly oscillating PDF, always positive',
-						'Cauchy model: fatter tailed than Gaussians, which are arguably better descriptions of real data',
-						'Power function model',
+	description <- c(	'Continuous Piecewise Linear model: any positive odd number of parameters, to define the free hinge points',
+						'Truncated Uniform model: a flat PDF requiring no parameters. I.e. the argument pars must be NA',
+						'Truncated Gaussian model: aka a normal distribution',
+						'Truncated Exponential model: can be growth or decay',
+						'Truncated Logistic model: a sigmoidal model often used for growth from an initial founder event to a maximum carrying capacity',
+						'Truncated Sinusoidal model: a regularly oscillating PDF, always positive',
+						'Truncated Cauchy model: fatter tailed than Gaussians, which are arguably better descriptions of real data',
+						'Truncated Power function model',
 						'Timeseries model: an independent timeseries that is hypothesised to be a model for the timeseries being studied')
+	model.choices <- data.frame(names=names,n.pars=n.pars,pars=pars,description=description)
+return(model.choices)}
+#--------------------------------------------------------------------------------------------
+getPhaseModelChoices <- function(){
+	names <- c('uniform','norm','cauchy','ellipse')
+	n.pars <- c(2,2,2,2)
+	pars <- c('min, max','mean, SD','location, scale','min, max')
+	description <- c(	'Uniform PDF beween min and max',
+						'Gaussian PDF',
+						'Cauchy PDF',
+						'Semi-ellipse PDF, i.e. an arch, between min and max')
 	model.choices <- data.frame(names=names,n.pars=n.pars,pars=pars,description=description)
 return(model.choices)}
 #--------------------------------------------------------------------------------------------
@@ -571,11 +582,6 @@ convertParsInner  <- function(model.pars, years, type, timeseries){
 		if(length(model.pars)!=1)stop('A timeseries model must have a single scaling parameter')
 		tmp <- timeseriesPDF(years, min(years), max(years),model.pars[1], timeseries)
 		}
-	if(type=='ellipsePDF'){
-		if(!is.na(model.pars))stop('An ellipse model must have a single NA parameter')
-		tmp <- ellipsePDF(years, min(years), max(years))
-		}
-		
 
 	inc <- years[2]-years[1]
 	pdf <- tmp/(sum(tmp)*inc)
@@ -930,17 +936,24 @@ logisticPDF <- function(x,min,max,k,x0){
 	pdf <- num/denom
 return(pdf)}
 #----------------------------------------------------------------------------------------------
-cauchyPDF <- function(x,min,max,x0,g){
+cauchyPDF <- function(x,min,max,l,s){
 	num <- 1
-	denom1 <- g
-	denom2 <- 1+((x-x0)/g)^2
-	denom3 <- atan((x0-min)/g) - atan((x0-max)/g)
+	denom1 <- s
+	denom2 <- 1+((x-l)/s)^2
+	denom3 <- atan((l-min)/s) - atan((l-max)/s)
 	pdf <- num/(denom1*denom2*denom3)
 return(pdf)}
 #----------------------------------------------------------------------------------------------
 powerPDF <- function(x,min,max,b,c){
 	num <- (c+1)*(b+x)^c
 	denom <- (b+max)*(c+1) - (b+min)*(c+1)
+	pdf <- num/denom
+return(pdf)}
+#----------------------------------------------------------------------------------------------
+dellipse <- function(x,min,max){
+	radius <- (max-min)/2
+	num <- sqrt( radius^2 - (x-((max+min)/2))^2)
+	denom <- 0.5 * pi * radius^2
 	pdf <- num/denom
 return(pdf)}
 #----------------------------------------------------------------------------------------------

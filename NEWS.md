@@ -9,6 +9,9 @@
 
 ### Version: 1.0.3.9005
 
+## 2023-09-15
+* Truncated models only for populaton dynamics clearly distinguished from phase models.
+
 ## 2023-09-13
 * semi-ellipse model added.
 

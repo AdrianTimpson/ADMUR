@@ -20,6 +20,8 @@ export(checkData)
 export(CPLparsToHinges)
 export(rollmean)
 export(getTruncatedModelChoices)
+export(getPhaseModelChoices)
+export(dellipse)
 
 importFrom(graphics, plot, axis, image, legend, lines, par, polygon, text)
 import(mathjaxr)
