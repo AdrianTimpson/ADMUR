@@ -165,7 +165,7 @@ plotCalArray <- function(CalArray){
 	P <- CalArray$probs
 	c14 <- as.numeric(row.names(P))
 	cal <- as.numeric(colnames(P))
-	col <- paste('grey',seq(100,0,by=-10),sep='')
+	col <- paste('grey',seq(100,0,by=-5),sep='')
 	image(cal,c14,t(P)^0.1,xlab='Cal BP',ylab='14C',xlim=rev(range(cal)),col=col, las=1, cex.axis=0.7, cex.lab=0.7)
 	}
 #--------------------------------------------------------------------------------------------	
@@ -515,7 +515,9 @@ convertPars <- function(pars, years, type, timeseries=NULL){
 
 	# convert parameters to a list, accounting for the fact that CPL can have any odd number of parameters
 	MC <- getTruncatedModelChoices()
-	x <- MC$n.pars[MC$names%in%type]
+	N <- length(type)
+	x <- c()
+	for(n in 1:N)x[n] <- MC$n.pars[MC$names==type[n]]
 	if('CPL'%in%type){
 		n.pars.cpl <- ncol(pars) - sum(x,na.rm=T)
 		x[is.na(x)] <- n.pars.cpl

@@ -24,21 +24,32 @@ p.caption {font-size: 0.7em;}
 
 ## Introduction to ADMUR
 
-This vignette provides a comprehensive guide to modelling population dynamics using the R package ADMUR, and accompanies the publication 'Directly modelling population dynamics in the South American Arid Diagonal using 14C dates', Philosophical Transactions B, 2020, A. Timpson et al. https://doi.org/10.1098/rstb.2019.0723 
+The ADMUR package provides a robust framework to infer population dynamics from radiocarbon datasets, given the uncontroversial assumption that (to a first order of approximation) the archaeological record contains more dateable anthropogenic material from prehistoric periods when population levels were greater.
+One common approach to modelling popuation dynamics is to build a Summed Probability Distribution (SPD) of radiocarbon dates, and test for statistically significant departures from a null population model using simulations.
+This tool is provided in ADMUR, but the method is inferior to model comparison approaches also provided in ADMUR, since there is no obvious null hypothesis.
+Instead, model comparison methods calculate the probability of the data under various plausible models, and select the most probable (least wrong) model.
+ADMUR provides many different models of population dynamics to compare, from simple parameterised distributions such as the sigmoid or exponential; 
+continuous piece-wise models which (if enough data is available) can accomodate huge complexity and detail; 
+and even an independent timeseries (such as an enviromental reconstruction) that is hypothesised to predict population dynamics.
 
-Throughout this vignette, R code blocks often use objects created earlier in the vignette in previous code blocks. However, the manual for each function provides examples with self sufficient R code blocks.
+ADMUR also provides tools to model the timing of an archaeological site-phase, similar to some of the OxCal tools. 
 
-The motivation for creating the ADMUR package is to provide a robust framework to infer population dynamics from radiocarbon datasets, given the uncontroversial assumption that (to a first order of approximation) the archaeological record contains more dateable anthropogenic material from prehistoric periods when population levels were greater.
-Unfortunately, the spatiotemporal sparsity of radiocarbon data conspires with the wiggly nature of the calibration curve to encourage the overinterpretation of such datasets, often leading to colourful but statistically unjustified interpretations of population dynamics.
-No statistical method can (or ever will) be able to perfectly reconstruct the true population dynamics from such a dataset. ADMUR is no exception to this, but provides tools to infer a plausible yet conservative reconstruction of population dynamics. 
+Throughout this vignette, R code blocks often use objects created earlier in the vignette in previous code blocks, and sometimes will require you to install additional R packages.
+
 
 ## Bayesian inference
 ADMUR discretises time to calculate model likelihoods numerically, and uses the Bayesian framework to obtain posterior probabilities of population parameters by combining a prior with the likelihood. However, given the recent fetishization of the word 'Bayesian' in archaeology, it is worth reflecting on exactly what this means. 
-The Bayesian approach provides a superb framework for justifying knowledge as beliefs that are being constantly updated in the light of new evidence. This implies that objective knowledge does not exist. Instead, given a set of observations, every observer should form a different conclusion depending on their prior beliefs. 
-This makes intuitive sense; a child may believe they have witnessed a victim being sawn in half at a magic show, whilst a parent is unlikely to believe it was real given their strong prior beliefs formed over many years of absorbing data that informs on what is anatomically possible with a human, the concepts of showmanship, and the punishments for murder. Therefore, the beauty and great power of the Bayesian approach is in providing a sensible means of making inferences when there are strong prior beliefs and only a small amount of new data.
-Priors are, by their very nature, subjective. The likelihood is not (the likelihood of something being true is defined as the probability of the data give that thing is true). In Bayesian inference, the most challenging part is usually formulating the likelihood function. Once obtained as a mathematical function, making the inference Bayesian is trivial. Both the frequentist and Bayesians agree on the likelihood, but in the extreme case on no data, the frequentist cannot provide an estimate, whilst the Bayesian recovers her prior.
+
+The Bayesian approach provides a superb framework for justifying knowledge as beliefs that are being constantly updated in the light of new evidence. This implies that objective knowledge does not exist. Instead, given a set of observations, every observer can form a different conclusion depending on their prior beliefs. 
+
+This makes intuitive sense- a child may believe they have witnessed a victim being sawn in half at a magic show, whilst a parent is unlikely to believe it was real given their strong prior beliefs formed over many years about what is anatomically possible, the concepts of showmanship, and the punishments for murder. 
+
+Therefore, the beauty and great power of the Bayesian approach is in providing a method for drawing inferences when there are strong prior beliefs and only a small amount of new data.
+
+Priors are, by their very nature, subjective. The likelihood is not (the model likelihood is defined as the probability of the observed data, under the model). In Bayesian inference, the most challenging part is usually formulating the likelihood function. Once obtained as a mathematical function, making the inference Bayesian is trivial. Both the frequentist and Bayesians agree on the likelihood, but in the extreme case of no data, the frequentist cannot provide an estimate, whilst the Bayesian recovers her prior.
 In the opposite situation where there are weak priors and a lot of data, the priors are 'washed out' by the new data, and the Bayesian posterior becomes indistinguishable from the frequentist estimate; both are data-dominated estimates (i.e. dominated by the likelihood).
-In the case of demographic modelling, we are fundamentally interested in what the data has to tell us, and are not interested in posteriors dominated by one researcher's strong priors and a tiny dataset. Therefore ADMUR applies a weak prior that is uniformly distributed across parameter space, and there is deliberately no provision for the user to change this prior.
+
+Bayesian inference also provides an elegant framework for integrating many different sources of evidence, since the posterior 'becomes' the prior in the next step. In fact, the words 'prior' and 'posterior' are misnomers - there is no temporal component to these Bayesian chains, and the order in which these sources of evidence are combined with the prior is irrelevant, since multiplication is commutative.
 
 ## Installation
 
@@ -47,7 +58,7 @@ The ADMUR package can be installed directly from the CRAN in the usual way:
 install.packages('ADMUR')
 ```
 
-Alternatively it can be installed from GitHub, after installing and loading the 'devtools' package on the CRAN:
+Alternatively it can be installed from GitHub, after installing and loading the 'devtools' package on the CRAN. However, this may be a beta version in development, so may not be as stable:
 ```{r, eval = FALSE}
 install.packages('devtools')
 library(devtools)
@@ -123,7 +134,7 @@ plotPD(cal)
 The CalArray is essentially a two-dimensional probability array of the calibration curve, and can be viewed using the [plotCalArray()](../html/plotCalArray.html) function. Calibration curves vary in their temporal resolution, and the preferred resolution can be specified using the parameter **inc** which interpolates the calibration curve.
 It would become prohibitively time and memory costly if analysing the entire 50,000 year range of the calibration curve at a 1 year resolution (requiring a 50,000 by 50,000 array) and in practice the default 5 year resolution provides equivalent results to 1 year resolution for study periods wider than c.1000 years. 
 
-```{r, eval = TRUE, fig.height = 5, fig.width=7, fig.align = "center", dev='jpeg'}
+```{r, eval = TRUE, fig.height = 6, fig.width=7, fig.align = "center", dev='jpeg'}
 x <- makeCalArray( calcurve=shcal20, calrange=c(5500,6000), inc=1 )
 plotCalArray(x)
 ```
@@ -133,7 +144,7 @@ plotCalArray(x)
 
 It is worth noting that the algorithm used by this package to calibrate ^14^C dates gives practically equivalent results to those from [OxCal](https://c14.arch.ox.ac.uk/oxcal.html) generated using [oxcAAR](https://cran.r-project.org/package=oxcAAR) and [Bchron](https://cran.r-project.org/package=Bchron) 
 
-![Comparison of calibration software for the ^14^C date: 3000 +/- 50 BP calibrated through intcal13.](software_compare_1.png)
+![Comparison of calibration software for the ^14^C date: 3000 +/- 70 BP calibrated through intcal20.](software_compare_1.png)
 
 However, there are two fringe circumstances where these software programs differ substantially: at the border of the calibration curve; and if a date has a large error.
 
@@ -415,7 +426,7 @@ CPL.4 <- JDEoptim(lower=rep(0,7), upper=rep(1,7), fn=objectiveFunction, PDarray=
 exp <- JDEoptim(lower=-0.01, upper=0.01, fn=objectiveFunction, PDarray=PD, type='exp', NP=20)
 
 # uniform has no parameters so a search is not required.
-uniform <- objectiveFunction(NULL, PD, type='uniform')
+uniform <- objectiveFunction(NA, PD, type='uniform')
 ```
 
 ```{r, echo = FALSE}
@@ -592,17 +603,23 @@ load('vignette.exp.SPDsimulationTest.RData')
 plotSimulationSummary(summary, legend.y=0.0012)
 ```
 
-## Other Models in ADMUR
+## More models of population dynamics
 
-The above modelling components (MCMC, GOF, model comparison, relative likelihoods, BIC etc) are not constrained to CPL models, but can be applied to any model structure. Currently ADMUR offers the following:
+The above modelling components (MCMC, GOF, model comparison, relative likelihoods, BIC etc) are not constrained to CPL models, but can be applied to any model structure. 
+Currently ADMUR offers the following models for population dynamics. 
+These are known as 'truncated' models, because in every case their total PMF is constrained to a date range defined by the user, using the argument 'calrange'.
+In other words, the user defines the date range she wishes to model, and these models are then truncated to that date range.
 
- **CPL, Uniform, Exponential, Gaussian, Cauchy, Sinusoidal, Logistic, Power law** 
+```{r, eval = FALSE}
+models <- getTruncatedModelChoices()
+print(models$names)
+```
 
-See [convertPars()](../html/convertPars.html) for details. Care should be taken when considering a Gaussian model. The distribution of data from a single event can often superficially appear to be normally distributed due to the tendency to unconsciously apply regression methods (minimising the residuals).
+See [convertPars()](../html/convertPars.html) for details. Care should be taken when considering a truncated Gaussian model. Data can often superficially appear to be normally distributed due to the tendency to unconsciously apply regression methods (minimising the residuals).
 However, contrary to appearances (and intuitions) a Gaussian does not 'flatten' towards the tails, but decreases at a greater and greater rate towards zero.
 As a consequence, small amounts of data that are several standard deviations away from the mean *appear* to fit a Gaussian quite well, but are in fact absurdly improbable.
-Instead, for single events consider a Cauchy model, given the phenomenon that real life data usually has fatter tails than a Gaussian.
-Alternatively, if the waxing and waning of data is suspected to be driven by an oscillating system (such as climate) a sinusoidal model may more sensible.
+Instead a truncated Cauchy model may be better, given the phenomenon that real life data usually has fatter tails than a Gaussian.
+Alternatively, if the waxing and waning of data is suspected to be driven by an oscillating system (such as climate) a truncated sinusoidal model may more sensible.
 
 The following code uses three toy datasets to demonstrate these models. After calibration through intcal20, they retain effective sample sizes of a little under n = 100.
 
@@ -681,7 +698,7 @@ legend(x=4000, y=max(spd3)*1.2, lwd=5, col=cols, bty='n', legend=c('Logistic','E
 
 # 5. Combination models
 
-ADMUR can also combine multiple models previously described into a more complex aggregated model. For example, we might hypothesise that an island's population dynamics are driven by the combination of some regular climatic oscillations (perhaps from orbital forcing) and growth to carrying capacity, and therefore wish to use a model that is the combination of sinusoidal and logistic. This can be achieved by using a vector of model types, and combining all the required parameters into a single vector, in their respective order.
+ADMUR can also combine multiple models into a more complex aggregated model. For example, we might hypothesise that an island's population dynamics are driven by the combination of some regular climatic oscillations (perhaps from orbital forcing) and growth to carrying capacity, and therefore wish to use a model that is the combination of sinusoidal and logistic. This can be achieved by using a vector of model types, and combining all the required parameters into a single vector, in their respective order.
 For example:
 
 ```{r, eval = FALSE}
