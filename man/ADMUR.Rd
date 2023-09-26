@@ -5,20 +5,23 @@
 \description{
 ADMUR: Ancient Demographic Modelling Using Radiocarbon
 
-Tools to directly model and compare the underlying dynamics of prehistoric population change using radiocarbon date datasets.
+Bayesia tools to directly model and compare the underlying dynamics of prehistoric population change using radiocarbon date datasets.
 	}
 \details{
-	Package to model population dynamics from anthropogenic datasets of dates such as radiocarbon dates. Provides tools to perform and compare three modelling approaches:
+	
+Package to model population dynamics from anthropogenic datasets of dates such as radiocarbon dates. 
 
-1. Directly modelling the underlying population dynamics using common parameteric models, including uniform, gaussian, exponential, logistic, sinusoidal, cauchy, power, etc.
+Models the underlying population dynamics using common parameteric models, including uniform, gaussian, exponential, logistic, sinusoidal, cauchy, power, etc.
 
-2. Directly modelling the underlying population dynamics using a Continuous Piecewise Linear (CPL) model framework, including estimating the dates and magnitude of demographic events (hinge points).
+Models the underlying population dynamics using a Continuous Piecewise Linear (CPL) model framework, including estimating the dates and magnitude of demographic events (hinge points).
 
-3. Directly modelling the underlying population dynamics using an independent timeseries. 
+Models the underlying population dynamics using an independent timeseries. 
 
-4. Summed Probability Distribution (SPD) generation, and simulation testing. Permits the rejection of a null hypothesis.
+Generates Summed Probability Distribution (SPD) and tests a null hypothesis using simulation.
 
-Tools to estimate Maximum likelihood; Goodness of Fit tests; model comparison.
+Tools to estimate Maximum likelihood; posterior distributions; Goodness of Fit tests; model comparison.
+
+Tools to model archaeological phases, and estimate date ranges.
 	}
 \references{
 	'Directly modelling population dynamics in the South American Arid Diagonal using 14C dates' by Adrian Timpson, Ramiro Barberena, Mark G. Thomas, César Méndez and Katie Manning, published in Philosophical Transactions of the Royal Society B, 2020. https://doi.org/10.1098/rstb.2019.0723

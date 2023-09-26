@@ -25,29 +25,30 @@ p.caption {font-size: 0.7em;}
 ## Introduction to ADMUR
 
 The ADMUR package provides a robust framework to infer population dynamics from radiocarbon datasets, given the uncontroversial assumption that (to a first order of approximation) the archaeological record contains more dateable anthropogenic material from prehistoric periods when population levels were greater.
+
 One common approach to modelling popuation dynamics is to build a Summed Probability Distribution (SPD) of radiocarbon dates, and test for statistically significant departures from a null population model using simulations.
 This tool is provided in ADMUR, but the method is inferior to model comparison approaches also provided in ADMUR, since there is no obvious null hypothesis.
+
 Instead, model comparison methods calculate the probability of the data under various plausible models, and select the most probable (least wrong) model.
+
 ADMUR provides many different models of population dynamics to compare, from simple parameterised distributions such as the sigmoid or exponential; 
 continuous piece-wise models which (if enough data is available) can accomodate huge complexity and detail; 
 and even an independent timeseries (such as an enviromental reconstruction) that is hypothesised to predict population dynamics.
 
 ADMUR also provides tools to model the timing of an archaeological site-phase, similar to some of the OxCal tools. 
 
-Throughout this vignette, R code blocks often use objects created earlier in the vignette in previous code blocks, and sometimes will require you to install additional R packages.
-
 
 ## Bayesian inference
-ADMUR discretises time to calculate model likelihoods numerically, and uses the Bayesian framework to obtain posterior probabilities of population parameters by combining a prior with the likelihood. However, given the recent fetishization of the word 'Bayesian' in archaeology, it is worth reflecting on exactly what this means. 
+ADMUR discretises time to calculate model likelihoods numerically, and uses the Bayesian framework to obtain posterior probabilities by combining a prior with the likelihood. However, given the recent fetishization of the word 'Bayesian' in archaeology, it is worth reflecting on exactly what this means. 
 
-The Bayesian approach provides a superb framework for justifying knowledge as beliefs that are being constantly updated in the light of new evidence. This implies that objective knowledge does not exist. Instead, given a set of observations, every observer can form a different conclusion depending on their prior beliefs. 
+The Bayesian approach provides a superb framework for justifying knowledge as beliefs that are updated in the light of new evidence. This implies that objective knowledge does not exist. Instead, given a set of observations, each observer can form a different conclusion depending on their prior beliefs. 
 
-This makes intuitive sense- a child may believe they have witnessed a victim being sawn in half at a magic show, whilst a parent is unlikely to believe it was real given their strong prior beliefs formed over many years about what is anatomically possible, the concepts of showmanship, and the punishments for murder. 
+This makes intuitive sense - a child may believe they have witnessed a victim being sawn in half at a magic show, whilst a parent is unlikely to believe it was real given their strong prior beliefs formed over many years about what is anatomically possible, the concepts of showmanship, and the punishments for murder. 
 
 Therefore, the beauty and great power of the Bayesian approach is in providing a method for drawing inferences when there are strong prior beliefs and only a small amount of new data.
 
-Priors are, by their very nature, subjective. The likelihood is not (the model likelihood is defined as the probability of the observed data, under the model). In Bayesian inference, the most challenging part is usually formulating the likelihood function. Once obtained as a mathematical function, making the inference Bayesian is trivial. Both the frequentist and Bayesians agree on the likelihood, but in the extreme case of no data, the frequentist cannot provide an estimate, whilst the Bayesian recovers her prior.
-In the opposite situation where there are weak priors and a lot of data, the priors are 'washed out' by the new data, and the Bayesian posterior becomes indistinguishable from the frequentist estimate; both are data-dominated estimates (i.e. dominated by the likelihood).
+Priors (by their very nature) are subjective, whilst the likelihood is not (the model likelihood is defined as the probability of the observed data, under the model). In Bayesian inference, the most challenging part is usually formulating the likelihood function. Once obtained as a mathematical function, making the inference Bayesian is trivial. Both the frequentist and Bayesians agree on the likelihood, but in the extreme case of no data, the frequentist cannot provide an estimate, whilst the Bayesian recovers her prior.
+In the opposite situation where there are weak priors and a lot of data, the priors are 'washed out' by the new data, and the Bayesian posterior becomes indistinguishable from the frequentist estimate. Both become data-dominated estimates (i.e. dominated by the likelihood).
 
 Bayesian inference also provides an elegant framework for integrating many different sources of evidence, since the posterior 'becomes' the prior in the next step. In fact, the words 'prior' and 'posterior' are misnomers - there is no temporal component to these Bayesian chains, and the order in which these sources of evidence are combined with the prior is irrelevant, since multiplication is commutative.
 
@@ -70,57 +71,50 @@ Either way, the ADMUR package can then be locally loaded:
 library(ADMUR)
 ```
 
-## 14C datasets
+## Data
 
-A summary of the available help files and data sets included in the package can be browsed, which include a terrestrial anthropogenic ^14^C dataset from the South American Arid Diagonal:
-```{r, eval = FALSE}
-help(ADMUR)
-help(SAAD)
-```
+The minimum requirements for a dataset is that it should be a data frame that includes at least the columns 'age' and 'sd'. Additional columns are permitted.
+ADMUR can also handle other dating types such as thermoluminescence or dendrochronology that are already provided in calendar time.
+This requires an additional column 'datingType' which should be specified as '14C' for radiocarbon dates. Text other than '14C' will assme the mean and SD are in calendar time, BP (before 1950 AD).
+If the column 'datingType' is omitted, ADMUR will assume all the dates are radiocarbon.
 
-Datasets must be structured as a data frame that include columns 'age' and 'sd', which represent the uncalibrated ^14^C age and its error, respectively.
+Various toy datasets are provided in ADMUR. 
+For example, data6 comprises radiocarbon dates which have already been grouped into archaeological phases, based on the expert stratographical knowledge of the archaeologist.
+Therefore it also contains the columns 'site' and 'phase'. Site S001 contains only one phase YBX, whilst site S002 containes two phases, CQH and OGG, etc:
+
 ```{r, eval = TRUE}
-SAAD[1:5,1:8]
+data6[1:10,]
 ```
 
-## Citations
-
-Citations are available as follows:
-```{r, eval = TRUE}
-citation('ADMUR')
-```
 **********
 
-# 2. Date calibration and SPDs
+# 2. radiocarbon date calibration and SPDs
 
-The algorithm used by ADMUR to calculate model likelihoods of a ^14^C dataset uses several functions to first calibrate ^14^C dates. These functions are also intrinsically useful for ^14^C date calibration or for generating a Summed Probability Distribution (SPD).
+Generating a single calibrated date distribution or a Summed Probability Distribution (SPD) of several calibrated dates requires either a two-step process to give the user full control of the date range and temporal resolution, or a simpler one step process using a wrapper function that automatically estimates a sensible date range and resolution from the dataset, performs the two step process internally, and plots the SPD.
 
-## Calibrated ^14^C date probability distributions
+## With the wrapper
 
-Generating a single calibrated date distribution or SPD requires either a two-step process to give the user full control of the date range and temporal resolution, or a simpler one step process using a wrapper function that automatically estimates a sensible date range and resolution from the dataset, performs the two step process internally, and plots the SPD.
-
-### With the wrapper
-
-1. Use the function [summedCalibratorWrapper()](../html/summedCalibratorWrapper.html) 
+Use the function [summedCalibratorWrapper()](../html/summedCalibratorWrapper.html) 
 
 ```{r, eval = TRUE, fig.height = 3, fig.width=7,  fig.align = "center", dev='jpeg', quality=100, warning=FALSE}
 data <- data.frame( age=c(6562,7144), sd=c(44,51) )
 x <- summedCalibratorWrapper(data)
 ```
 
-Notice the function assumes the data provided were all ^14^C dates. However, if you have other kinds of date such as thermoluminescence you can specify this. Non-^14^C types are assumed to be in calendar time, BP. You can also specify a particular calibration curve:
+The function assumes the data provided were all radiocarbon dates. 
+However, if you have other kinds of date such as thermoluminescence you can specify this. Non-radiocarbon types are assumed to be in calendar time, BP. You can also specify a particular calibration curve:
 
 ```{r, eval = TRUE, fig.height = 3, fig.width=7, fig.align = "center", dev='jpeg', quality=100, warning=FALSE}
 data <- data.frame( age=c(6562,7144), sd=c(44,51), datingType=c('14C','TL') )
 x <- summedCalibratorWrapper(data=data, calcurve=shcal20)
 ```
 
-### Without the wrapper
+## Without the wrapper
 
 Generating the SPD without the wrapper gives you more control, and requires a two-step process:
 
 1. Convert a calibration curve to a CalArray using the function [makeCalArray()](../html/makeCalArray.html)
-1. Calibrate the ^14^C dates through the CalArray using the function [summedCalibrator()](../html/summedCalibrator.html).
+1. Calibrate the radocarbon dates through the CalArray using the function [summedCalibrator()](../html/summedCalibrator.html).
 
 This is useful for improving computational times if generating many SPDs, for example in a simulation framework, since the CalArray needs generating only once. 
 
@@ -134,44 +128,32 @@ plotPD(cal)
 The CalArray is essentially a two-dimensional probability array of the calibration curve, and can be viewed using the [plotCalArray()](../html/plotCalArray.html) function. Calibration curves vary in their temporal resolution, and the preferred resolution can be specified using the parameter **inc** which interpolates the calibration curve.
 It would become prohibitively time and memory costly if analysing the entire 50,000 year range of the calibration curve at a 1 year resolution (requiring a 50,000 by 50,000 array) and in practice the default 5 year resolution provides equivalent results to 1 year resolution for study periods wider than c.1000 years. 
 
-```{r, eval = TRUE, fig.height = 6, fig.width=7, fig.align = "center", dev='jpeg'}
-x <- makeCalArray( calcurve=shcal20, calrange=c(5500,6000), inc=1 )
+```{r, eval = TRUE, fig.height = 7, fig.width=7, fig.align = "center", dev='jpeg'}
+x <- makeCalArray( calcurve=shcal20, calrange=c(5500,7000), inc=1 )
 plotCalArray(x)
 ```
+The image arbitrarily uses only ten shades, but the resolution of the matrix is actually 1 year (inc=1).
 
 
-## Comparison with other calibration software
+## Phasing
 
-It is worth noting that the algorithm used by this package to calibrate ^14^C dates gives practically equivalent results to those from [OxCal](https://c14.arch.ox.ac.uk/oxcal.html) generated using [oxcAAR](https://cran.r-project.org/package=oxcAAR) and [Bchron](https://cran.r-project.org/package=Bchron) 
+A naive approach to generating an SPD as a proxy for population dynamics would be to sum all dates in the dataset.
+A more sensible approach is to sum the SPDs of each phase. I.e., to generate an SPD for each phase, normalise such that each is equally weighted, then sum again.
+The need to bin dates into phases is an important step in modelling population dynamics to adjust for the data ascertainment bias of some archaeological finds having more dates by virtue of a larger research interest or budget. 
 
-![Comparison of calibration software for the ^14^C date: 3000 +/- 70 BP calibrated through intcal20.](software_compare_1.png)
+There may be occasions where it is not possible to phase the dates according to a proper evaluation of the stratigraphy.
+Provided the dates have been assigned to a site, ADMUR provides an automatic binning algorithm to phase the data, based broadly on empirical continuity / disconutinuity of the dates at each site, such that a phase comprises dates with a mean radiocarbon date within 200 radiocarbon years of any other date in that respective phase. 
 
-However, there are two fringe circumstances where these software programs differ substantially: at the border of the calibration curve; and if a date has a large error.
+For example, the dataset SAAD has not already been phased (does not include a column 'phase'). 
+We can explore a subset comprising the following 8 dates from 2 sites.
+After applying the binning algorithm Pacopampa.1 comprises samples 1207 and 1206, Pacopampa.2 comprises sample 1205, Carrizal.1 comprises samples 1196 and 1195 and 1194 and 1193, and Carrizal.2 comprises sample 1192:
 
-### Edge effects 
-
-Consider the real ^14^C date [MAMS-13035] <https://doi.org/10.1016/j.aeae.2015.11.003>  age: 50524 +/- 833 BP calibrated through intcal13, which only extends to 46401BP. Bchron throws an error, whilst OxCal applies a one-to-one mapping between Conventional Radiocarbon (CRA) time and calendar time for any date (mean) beyond the range of the calibration curve. The latter is in theory a reasonable way to mitigate the problem, however OxCal applies this in a binary manner that can create peculiarities. Instead ADMUR gradually fades the calibration curve to a one-to-one mapping between the end of the curve and 60,000 BP. 
-
-![Comparison of calibration software at the limits of intcal13. OxCal and Bchron produce a truncated distribution for date C. Bchron cannot calibrate date D, and OxCal suggests date D is younger than dates A, B and C. ADMUR performs a soft fade at the limit of the calibration curve.](software_compare_2.png)
-
-### Large errors 
-
-A ^14^C date is typically reported as a mean date with an error, which is often interpreted as representing a symmetric Gaussian distribution before calibration. However, a Gaussian has a non-zero probability at all possible years (between -$\infty$ and +$\infty$), and therefore cannot fairly represent the date uncertainty which must be skewed towards the past. Specifically, if we consider the date in CRA time, it must have a zero probability of occurring in the future. Alternatively, if we consider the date as a ^14^C/^12^C ratio, it cannot be smaller than 1 (the present). Therefore ADMUR assumes a ^14^C date error is lognormally distributed with a mean equal to the CRA date, and a variance equal to the CRA error squared. This naturally skews the distribution away from the present. In practice, this difference is undetectably trivial for typical radiocarbon errors since the lognormal distribution approximates a normal distribution away from zero. However, theoretically the differences can be large if considering dates with large errors that are close to the present.
-
-![Comparison of calibration software for the ^14^C dates 15000 +/- 9000 BP, 15000 +/- 3000 BP and 15000 +/- 1000 BP, using intcal13. The total probability mass of each of the nine curves equals 1. Differences are apparent if a date has a large error (top tile): Bchron assumes the CRA error is Normally distributed, resulting in a truncated curve with a substantial probability at present. OxCal produces a heavily skewed distribution with a low probability at present and a substantial probability at 50,000 BP that suddenly truncates to zero beyond this. ADMUR assumes the CRA error is Lognormally distributed, which is indistinguishable from a normal distribution for typical errors, but naturally prevents any probability mass occurring at the present or future when errors are large.](software_compare_3.png)
-
-## Phased data: adjusting for ascertainment bias
-
-A naive approach to generating an SPD as a proxy for population dynamics would be to sum all dates in the dataset, but a more sensible approach is to sum the SPDs of each phase. The need to bin dates into phases is an important step in modelling population dynamics to adjust for the data ascertainment bias of some archaeological finds having more dates by virtue of a larger research interest or budget. 
-
-Therefore [phaseCalibrator()](../html/phaseCalibrator.html) generates an SPD for each phase in a dataset, and includes a binning algorithm which provides a useful solution to handling large datasets that have not been phased. For example, consider the following 8 dates from 2 sites:
+The function [phaseCalibrator()](../html/phaseCalibrator.html) includes applies the binning algorithm if required, and generates an SPD for each phase in a dataset:
 
 ```{r, eval = TRUE}
 data <- subset( SAAD, site %in% c('Carrizal','Pacopampa') )
 data[,2:7]
 ```
-
-The data have not already been phased (do not include a column 'phase') therefore the default binning algorithm calibrates these dates into four phases. this is achieved by binning dates that have a mean ^14^C date within 200 ^14^C years of any other date in that respective bin. Therefore Pacopampa.1 comprises samples 1207 and 1206, Pacopampa.2 comprises sample 1205, Carrizal.1 comprises samples 1196 and 1195 and 1194 and 1193, and Carrizal.2 comprises sample 1192:
 
 
 ```{r, eval = TRUE, fig.height = 3, fig.width=7, fig.align = "center", dev='jpeg', quality=100, warning=FALSE}
@@ -196,17 +178,151 @@ SPD <- summedPhaseCalibrator( data=data, calcurve=shcal20, calrange=c(2000,6000)
 plotPD(SPD)
 ```
 
+Ideally, data has already been phased based on archaeological expertise, and a proper evaluation of the stratigraphy. 
+No such binning algorithm is then required. 
+The presence of the column 'phase' in the data means the wrapper function [summedPhaseCalibrator()](../html/summedPhaseCalibrator.html) will use the provided phases. 
+For example, consider the dataset data6, which has already been phased (already has a column 'phase'):
+
+
+```{r, eval = TRUE, fig.height = 3, fig.width=7, fig.align = "center", dev='jpeg', quality=100, warning=FALSE}
+x <- summedPhaseCalibrator( data=data6, calcurve=shcal20, calrange=c(5000,8000) )
+plotPD(x)
+```
+
 **********
 
-# 3. Continuous Piecewise Linear (CPL) Modelling
+# 3. Modelling populaton dynamics
 
-A CPL model lends itself well to the objectives of identifying specific demographic events. Its parameters are the (x,y) coordinates of the hinge points, which are the relative population size (y) and timing (x) of these events. 
+It is crucial to ensure that population dynamics are only modelled across a time period that we can be confident is well represented by data.
+Therefore, the start and end date of the period to be modelled is a key decision to be made by the modeller.
+As a dataset increases in size, the absence of evidence increasingly becomes evidence of absence. For example, absence of dates prior to first arrival on an island; or a hiatus period.
 
-## Calculating likelihoods
 
-Theoretically a calibrated date should be a continuous Probability Density Function (PDF), however in practice a date is represented as a discrete vector of probabilities corresponding to each calendar year, and therefore is a Probability Mass Function (PMF). This discretisation provides the advantage that numerical methods can be used to easily calculate likelihoods, provided the model is also discretised to the same time points. 
+Theoretically a calibrated radiocarbon date or Summed Probability Distribution (SPD) of many radiocarbon dates should be a continuous Probability Density Function (PDF), 
+however in practice they are represented as a discrete vector of probabilities corresponding to each calendar year, and therefore are Probability Mass Function (PMF). 
+This discretisation provides the advantage that numerical methods can be used to easily calculate likelihoods, provided the model is also discretised to the same time points. 
 
-A [toy()](../html/toy.html) model is provided to demonstrate how this achieved. First, we simulate a plausible ^14^C dataset and calibrate it. The function [simulateCalendarDates()](../html/simulateCalendarDates.html) automatically covers a slightly wider date range to ensure simulated ^14^C dates are well represented around the edges:
+The general objective in modelling is to compare several plausible hypotheses, and find which is the least bad.
+In other words, we define our hypotheses as statistical models, and calculate the probability of the observed data, given a model. 
+This is the model likelihood, given the data.
+More complex models (more free parameters) are typically able to be fitted more closely to the observed data,
+but this results in overfitting - as situation where the model only works well with this particular dataset, but performs badly with new data.
+Therefore the key part of modelling is to fairly compare competing models using a statistic (Information Criterion such as BIC) that balances the likelihood against the model complexity.
+Models with greater complexity are punished, whilst simpler models that fit the data well are favoured.
+
+When calculating model likelihoods, we must be sensitive to the data problem that some archaeological phases have more radiocarbon dates than others, merely due to research bias and ascertainment bias.
+Discussed earlier in this manual, we argue that data should first be phased, so that an SPD is generated for each phase and normalised to 1.
+Therefore, ADMUR calculates the exact probability of each phase's SPD under a model, then multiplies each probability together (sum of logs).
+As such, model comparison using BIC is calculated using the effective sample size, 
+which is the number of phases within the date range, and not the total number of radiocarbon dates.
+The rationale here is that it would be very wrong to assume each radiocarbon date is a random independent sample of the overall population's material,
+but it is reasonable to assume each radiocarbon date is a random independent sample of the phase it was assigned to, 
+and that each phase is a random independent sample of the overall population's material.
+
+ADMUR offers three 'types' of model for population dynamics, which essentially provide a hypothesis of the underlying population fluctuations, coded as a PMF.
+These are all 'truncated' models, because in every case their total PMF is constrained to a date range defined by the user, using the argument 'calrange'.
+In other words, the user defines the date range she wishes to model, and these models are then truncated to that date range.
+
+## Simple parametric models
+
+Typically symmetric or unimodal truncated versions of very common curves. Easy to calculate the PMF with a short formula:
+
+```{r, eval = FALSE}
+models <- getTruncatedModelChoices()
+print(models$names)
+```
+
+See [convertPars()](../html/convertPars.html) for details. Care should be taken when considering a truncated Gaussian model. Data can often superficially appear to be normally distributed due to the tendency to unconsciously apply regression methods (minimising the residuals).
+However, contrary to appearances (and intuitions) a Gaussian does not 'flatten' towards the tails, but decreases at a greater and greater rate towards zero.
+As a consequence, small amounts of data that are several standard deviations away from the mean *appear* to fit a Gaussian quite well, but are in fact absurdly improbable.
+Instead a truncated Cauchy model may be better, given the phenomenon that real life data usually has fatter tails than a Gaussian.
+Alternatively, if the waxing and waning of data is suspected to be driven by an oscillating system (such as climate) a truncated sinusoidal model may more sensible.
+
+The following code uses three toy datasets to demonstrate some simple parametric models. After calibration through intcal20, they retain effective sample sizes of a little under n = 100.
+
+```{r, eval = FALSE}
+# generate SPDs
+CalArray <- makeCalArray(intcal20, calrange = c(1000,4000))
+spd1 <- summedCalibrator(data1, CalArray, normalise='full')
+spd2 <- summedCalibrator(data2, CalArray, normalise='full')
+spd3 <- summedCalibrator(data3, CalArray, normalise='full')
+
+# calibrate phases
+PD1 <- phaseCalibrator(data1, CalArray, remove.external = TRUE)
+PD2 <- phaseCalibrator(data2, CalArray, remove.external = TRUE)
+PD3 <- phaseCalibrator(data3, CalArray, remove.external = TRUE)
+
+# effective sample sizes 
+ncol(PD1)
+ncol(PD2)
+ncol(PD3)
+
+# Now we need to search for the best fitting model parameters, using a Maximum Likelihood (ML) search.
+# We can use any out-of-the-box search algorithm or optimisation algorithm to find the best paramameter values.
+# We suggest using the function JDEoptim from the DEoptimR package, which uses a very nice evolutionary algorithm. 
+# Not necessarily the fastest, but very robust with complex multi-dimensional likelihood surfaces:
+
+library(DEoptimR)
+norm <- JDEoptim(lower=c(1000,1), upper=c(4000,5000), 
+	fn=objectiveFunction, PDarray=PD1, type='norm', NP=40, trace=T)
+cauchy <- JDEoptim(lower=c(1000,1), upper=c(4000,5000),
+	fn=objectiveFunction, PDarray=PD1, type='cauchy', NP=40, trace=T)
+sine <- JDEoptim(lower=c(0,0,0), upper=c(1/1000,2*pi,1),
+	fn=objectiveFunction, PDarray=PD2, type='sine', NP=60, trace=T)
+logistic <- JDEoptim(lower=c(0,0), upper=c(1,10000),
+	fn=objectiveFunction, PDarray=PD3, type='logistic', NP=40, trace=T)
+exp <- JDEoptim(lower=c(0), upper=c(1),
+	fn=objectiveFunction, PDarray=PD3, type='exp', NP=20, trace=T)
+power <- JDEoptim(lower=c(0,-10), upper=c(10000,0),
+	fn=objectiveFunction, PDarray=PD3, type='power', NP=40, trace=T)
+
+```
+
+Note the upper boundaries for the sinewave (see [sinewavePDF()](../html/sinewavePDF.html) for details). 
+The first parameter governs the frequency, so should be constrained by a wavelength no shorter than c. 1/10th of the date range.  
+
+Now the Maximum Likelihood parameters need to be converted into a PDF and plotted:
+
+```{r, eval = FALSE}
+# convert parameters to model PDs
+years <- 1000:4000
+mod.norm <- convertPars(pars=norm$par, years, type='norm')
+mod.cauchy <- convertPars(pars=cauchy$par, years, type='cauchy')
+mod.sine <- convertPars(pars=sine$par, years, type='sine')
+mod.uniform <- convertPars(pars=NULL, years, type='uniform')
+mod.logistic <- convertPars(pars=logistic$par, years, type='logistic')
+mod.exp <- convertPars(pars=exp$par, years, type='exp')
+mod.power <- convertPars(pars=power$par, years, type='power')
+
+# Plot SPDs and various fitted models:
+par(mfrow=c(3,1), mar=c(4,4,1,1))
+cols <- c('steelblue','firebrick','orange')
+
+plotPD(spd1)
+lines(mod.norm, col=cols[1], lwd=5)
+lines(mod.cauchy, col=cols[2], lwd=5)
+legend(x=4000, y=max(spd1)*1.2, lwd=5, col=cols, bty='n', legend=c('Gaussian','Cauchy'))
+
+plotPD(spd2)
+lines(mod.sine, col=cols[1], lwd=5)
+lines(mod.uniform, col=cols[2], lwd=5)
+legend(x=4000, y=max(spd2)*1.2,  lwd=5, col=cols, bty='n', legend=c('Sinewave','Uniform'))
+
+plotPD(spd3)
+lines(mod.logistic, col=cols[1], lwd=5)
+lines(mod.exp, col=cols[2], lwd=5)
+lines(mod.power, col=cols[3], lwd=5)
+legend(x=4000, y=max(spd3)*1.2, lwd=5, col=cols, bty='n', legend=c('Logistic','Exponential','Power Law'))
+```
+![Examples of some simple parametric models available in ADMUR](further_models.png){width=680px}  
+
+
+## Continuous Piecewise Linear (CPL) Modelling
+
+A CPL model lends itself well to the objectives of identifying specific demographic events. 
+Its parameters are the (x,y) coordinates of the hinge points, which are the relative population size (y) and timing (x) of these events. 
+
+A [toy()](../html/toy.html) model is provided to demonstrate how this achieved. First, we simulate a plausible radiocarbon dataset and calibrate it. The function [simulateCalendarDates()](../html/simulateCalendarDates.html) automatically covers a slightly wider date range to ensure simulated ^14^C dates are well represented around the edges:
 
 ```{r, eval = TRUE}
 set.seed(12345) 
@@ -404,9 +520,200 @@ relative <- relativeRate(x,y)
 plot(conventional, relative, type='l')
 rect(-100,-100,c(10,0,-10),c(10,0,-10), lty=2,border='grey')
 ```
+
+## Combination models
+
+ADMUR can also combine multiple models into a more complex aggregated model. For example, we might hypothesise that an island's population dynamics are driven by the combination of some regular climatic oscillations (perhaps from orbital forcing) and growth to carrying capacity, and therefore wish to use a model that is the combination of sinusoidal and logistic. This can be achieved by using a vector of model types, and combining all the required parameters into a single vector, in their respective order.
+For example:
+
+```{r, eval = FALSE}
+# generate SPD
+CalArray <- makeCalArray(intcal20, calrange = c(1000,4000))
+spd <- summedCalibrator(data4, CalArray, normalise='full')
+
+# calibrate phases
+PD <- phaseCalibrator(data4, CalArray, remove.external = TRUE)
+
+# parameter search
+combo.sine.logistic <- JDEoptim(lower=c(0,0,0,0,0), upper=c(1/1000,2*pi,1,1,10000),
+	fn=objectiveFunction, PDarray=PD, type=c('sine','logistic'), NP=100, trace=T)
+	
+# Convert MAP parameters to a PDF
+mod.combo <- convertPars(pars=combo.sine.logistic$par, years, type=c('sine','logistic'))
+
+# Plot the SPD and the model
+plotPD(spd)
+lines(mod.combo, col=cols[1], lwd=5)
+legend(x=4000, y=max(spd)*1.2,  lwd=5, col=cols[1], bty='n', legend=c('combo.sine.logistic'))
+```
+![Example of a combination model](combination_model.png){width=680px}  
+
 **********
 
-# 4. Inference
+
+# 4. Taphonomy
+
+Taphonomic loss has an important influence on the amount of datable material that can be recovered, with the obvious bias that older material is less likely to survive. 
+This means that if a constant population deposited material at a constant rate, we should expect the archaeological record to show an increase in dates towards the present, rather than a uniform distribution of dates.
+
+This taphonomic loss rate has been estimated by [Surovell et al.](https://doi.org/10.1016/j.jas.2009.03.029) and  [Bluhm and Surovell](https://doi.org/10.1017/qua.2018.78) who make a compelling argument that a power function $a(x+b)^c$  provides a useful model of taphonomic loss through time ($x$), providing not only a good statistical fit to empirical data, but is also consistent with the mechanism that datable material is subject to greater initial environmental degradation when first deposited on the ground surface compared to the increasing protection through time as it becomes cocooned from these forces. 
+
+However, there are two important issues to consider when modelling taphonomy:
+
+1. There is substantial uncertainty regarding the values of the parameters that determine the shape of the power function. We should expect different taphonomic rates in different locations due to variation in environmental and geological conditions. Indeed these studies have estimated different parameter values for the two datasets used. 
+1. There is a common misunderstanding that the taphonomic curve can be used to 'adjust' or 'correct' the data or an SPD to generate a more faithful representation of the true population dynamics. In fact the inclusion of taphonomy is achieved with additional appropriate model parameters, resulting in a more complex model. Whether or not this greater complexity is justified is moot - the decision to include or exclude cannot be resolved with model comparison and should be justified with an independent argument. When comparing models using BIC, all should be consistent in either including or excluding taphonomic curve parameters.
+
+## Taphonomic curve parameters
+
+The above studies use regression methods to estimate the taphonomic curve parameters. These methods don't incorporate the full information of the calibrated 14C dates (instead a point estimate is used for each date), and therefore are not based on likelihoods. Nor do they provide confidence intervals for the curve parameters. Finally, the parameter $a$ is unnecessary for the purposes of population modelling, since we are not interested in estimating the *absolute* loss in material, merely the *relative* loss through time. Therefore we can consider the taphonomic curve as a PDF such that the total area across the study period equals 1. This results in the following formula, where $x$ is time, and $x_{min}$ and $x_{max}$ are the time boundaries of the study period: $$\frac{(c+1)(b+x)^c}{(b+x_{max})^{(c+1)} - (b+x_{min})^{(c+1)}}$$ 
+
+This defines ADMUR's power model PDF which we apply within the MCMC framework to estimate the joint parameter distributions of $b$ and $c$ from the same two datasets used in the above studies, constraining the study period (as Bluhm and Surovell did) to between 1kyr and 40kyr BP as follows:
+
+```{r, eval = FALSE}
+# generate an PD array for each dataset
+years <- seq(1000,40000,by=50)
+CalArray <- makeCalArray(intcal20, calrange = c(1000,40000),inc=50)
+PD1 <- phaseCalibrator(bryson1848, CalArray, remove.external = TRUE)
+PD2 <- phaseCalibrator(bluhm2421, CalArray, remove.external = TRUE)
+
+# MCMC search
+chain.bryson <- mcmc(PDarray=PD1, 
+		startPars=c(10000,-1.5), 
+		type='power', N=50000, 
+		burn=2000, 
+		thin=5, 
+		jumps =c(250,0.075)) 
+		
+chain.bluhm <- mcmc(PDarray=PD2, 
+	startPars=c(10000,-1.5), 
+	type='power', N=50000, 
+	burn=2000, 
+	thin=5, 
+	jumps =c(250,0.075))
+
+# convert parameters to taphonomy curves
+curve.bryson <- convertPars(chain.bryson$res, type='power', years=years)
+curve.bluhm <- convertPars(chain.bluhm$res, type='power', years=years)
+
+# plot
+plot(NULL, xlim=c(0,12000),ylim=c(-2.5,-1), xlab='parameter b', ylab='parameter c')
+points(chain.bryson$res, col=cols[1])
+points(chain.bluhm$res, col=cols[2])
+
+plot(NULL, xlim=c(0,40000),ylim=c(0,0.00025), xlab='yrs BP', ylab='PD')
+N <- nrow(chain.bryson$res)
+for(n in sample(1:N,size=1000)){
+	lines(years,curve.bryson[n,], col=cols[1])
+	lines(years,curve.bluhm[n,], col=cols[2])
+	}
+```
+![Joint taphonomic parameter estimates (and equivalent curves) from the MCMC chain generated in ADMUR using datasets from Surovell et al. 2009 and Bluhm and Surovell 2018](taphonomy_bryson_bluhm.png){width=680px}  
+
+Clearly the taphonomic parameters $b$ and $c$ are highly correlated, and although the curves superficially appear very similar, the parameters differ significantly between the two datasets. 
+
+## Including taphonomy in a model
+
+### MAP Search
+
+Taphonomy can be included in any ADMUR model by including 'power' model parameters (taphonomic parameters $b$ and $c$). We suggest constraining these parameters to $0 < b < 20000$ and $-3 < c < 0$, but if there is better prior knowledge of this range (perhaps an independent dataset based on volcanic eruptions for the same study area) then this can be further constrained accordingly.
+
+For example, we might perform a MAP search using the previously generated PD array, to find the best 3-CPL model with and without taphonomy as follows:
+```{r, eval = FALSE}
+best <- JDEoptim(lower=c(0,0,0,0,0),
+	upper=c(1,1,1,1,1), 
+	fn=objectiveFunction, 
+	PDarray=PD, 
+	type='CPL',
+	trace=T, 
+	NP=100) 
+	
+best.taph <- JDEoptim(lower=c(0,0,0,0,0,0,-3), 
+	upper=c(1,1,1,1,1,20000,0), 
+	fn=objectiveFunction, 
+	PDarray=PD, 
+	type=c('CPL','power'),
+	trace=T, 
+	NP=140) 
+```
+
+These parameters can then be converted to model PDFs and plotted:
+
+```{r, echo = FALSE}
+load('vignette.3CPL.JDEoptim.best.RData')
+load('vignette.3CPL.JDEoptim.best.taph.RData')
+```
+
+```{r, eval = TRUE, fig.height = 4, fig.width=7, fig.align = "center", dev='jpeg', quality=100, warning=FALSE}
+CPL <- convertPars(pars=best$par, years=5500:7500, type='CPL')
+CPL.taph <- convertPars(pars=best.taph$par, years=5500:7500, type=c('CPL','power'))
+
+SPD <- summedPhaseCalibrator( data=data5, calcurve=shcal20, calrange=c(5500,7500) )
+plotPD(SPD)
+cols <- c('firebrick','orchid2')
+lines(CPL$year, CPL$pdf, lwd=2, col=cols[1])
+lines(CPL.taph$year, CPL.taph$pdf, lwd=2, col=cols[2])
+legend(x=6300,y=0.001,legend=c('3-CPL','3-CPL with taphonomy'),bty='n',col=cols,lwd=2,cex=0.7)
+```
+
+The above *3-CPL with taphonomy* model represents a conflation of two model components: the population dynamics and the taphonomic loss. Instead we are interested in separating these components:
+```{r, eval = TRUE, fig.height = 4, fig.width=7, fig.align = "center", dev='jpeg', quality=100, warning=FALSE}
+pop <- convertPars(pars=best.taph$par[1:5], years=5500:7500, type='CPL')
+taph <- convertPars(pars=best.taph$par[6:7], years=5500:7500, type='power')
+plotPD(pop)
+title('Population dynamics')
+plotPD(taph)
+title('Taphonomic loss')
+```
+
+Finally the hinge coordinates of the population dynamics can be extracted:
+```{r, eval = TRUE}
+CPLparsToHinges(pars=best.taph$par[1:5], years=5500:7500)
+```
+
+### MCMC search for credible intervals
+
+We should always be cautious of assigning too much importance to point estimates. MAP estimates above are no exception to this. Smaller sample sizes will always result in larger uncertainties, and it is always better to estimate the plausible range of results. This is of particular concern with taphonomic parameters since the reanalysis of the volcanic datasets above illustrates how a large range of parameter combinations provide very similar taphonomic curves. Furthermore, when including taphonomy in the model, the taphonomic parameters have the potential to interact with the population dynamics parameters in vastly more parameter combinations that will give in many different combinations of similar overall radiocarbon date distributions. 
+Therefore we can perform an MCMC parameter search as follows:
+
+```{r, eval = FALSE}
+chain.taph <- mcmc(PDarray = PD, 
+	startPars = c(0.5,0.5,0.5,0.5,0.5,10000,-1.5), 
+	type=c('CPL','power'), 
+	N = 30000, 
+	burn = 2000, 
+	thin = 5, 
+	jumps = 0.025)
+```
+
+These can then be separated into population dynamics parameters and taphonomic parameters for either direct plotting, or converted to model PDFs and plotted:
+
+```{r, eval = FALSE}
+# convert parameters into model PDFs
+pop <- convertPars(pars=chain.taph$res[,1:5], years=5500:7500, type='CPL')
+taph <- convertPars(pars=chain.taph$res[,6:7], years=seq(1000,30000,by=50), type='power')
+
+# plot population dynamics PDF
+plot(NULL, xlim=c(7500,5500),ylim=c(0,0.0013), xlab='calBP', ylab='PD', las=1)
+for(n in 1:nrow(pop))lines(5500:7500, pop[n,],col=alpha(1,0.05))
+
+# plot taphonomy PDF
+plot(NULL, xlim=c(30000,0),ylim=c(0,0.00025), xlab='calBP', ylab='PD',las=1,)
+for(n in 1:nrow(taph))lines(seq(1000,30000,by=50), taph[n,],col=alpha(1,0.02))
+
+# plot taphonomic parameters
+plot(NULL, xlim=c(0,20000),ylim=c(-3,0), xlab='parameter b', ylab='parameter c',las=1)
+for(n in 1:nrow(chain.taph$res))points(chain.taph$res[n,6], chain.taph$res[n,7],col=alpha(1,0.2),pch=20)
+```
+
+![Joint posterior distributions of population dynamics only.](mcmc_pop_without_taph.png){width=680px}
+ 
+![Joint posterior distributions of taphonomy only. Clearly there is not enough information content in such a small toy dataset to narrow the taphonomic parameters better than the initial prior constraints](mcmc_taph.png){width=680px} 
+
+
+
+**********
+
+# 5. Statistical Inference
 
 ## Model selection using BIC 
 
@@ -603,280 +910,44 @@ load('vignette.exp.SPDsimulationTest.RData')
 plotSimulationSummary(summary, legend.y=0.0012)
 ```
 
-## More models of population dynamics
-
-The above modelling components (MCMC, GOF, model comparison, relative likelihoods, BIC etc) are not constrained to CPL models, but can be applied to any model structure. 
-Currently ADMUR offers the following models for population dynamics. 
-These are known as 'truncated' models, because in every case their total PMF is constrained to a date range defined by the user, using the argument 'calrange'.
-In other words, the user defines the date range she wishes to model, and these models are then truncated to that date range.
-
-```{r, eval = FALSE}
-models <- getTruncatedModelChoices()
-print(models$names)
-```
-
-See [convertPars()](../html/convertPars.html) for details. Care should be taken when considering a truncated Gaussian model. Data can often superficially appear to be normally distributed due to the tendency to unconsciously apply regression methods (minimising the residuals).
-However, contrary to appearances (and intuitions) a Gaussian does not 'flatten' towards the tails, but decreases at a greater and greater rate towards zero.
-As a consequence, small amounts of data that are several standard deviations away from the mean *appear* to fit a Gaussian quite well, but are in fact absurdly improbable.
-Instead a truncated Cauchy model may be better, given the phenomenon that real life data usually has fatter tails than a Gaussian.
-Alternatively, if the waxing and waning of data is suspected to be driven by an oscillating system (such as climate) a truncated sinusoidal model may more sensible.
-
-The following code uses three toy datasets to demonstrate these models. After calibration through intcal20, they retain effective sample sizes of a little under n = 100.
-
-```{r, eval = FALSE}
-# generate SPDs
-CalArray <- makeCalArray(intcal20, calrange = c(1000,4000))
-spd1 <- summedCalibrator(data1, CalArray, normalise='full')
-spd2 <- summedCalibrator(data2, CalArray, normalise='full')
-spd3 <- summedCalibrator(data3, CalArray, normalise='full')
-
-# calibrate phases
-PD1 <- phaseCalibrator(data1, CalArray, remove.external = TRUE)
-PD2 <- phaseCalibrator(data2, CalArray, remove.external = TRUE)
-PD3 <- phaseCalibrator(data3, CalArray, remove.external = TRUE)
-
-# effective sample sizes
-ncol(PD1)
-ncol(PD2)
-ncol(PD3)
-
-# MAP search, fitting various models to various datasets
-norm <- JDEoptim(lower=c(1000,1), upper=c(4000,5000), 
-	fn=objectiveFunction, PDarray=PD1, type='norm', NP=40, trace=T)
-cauchy <- JDEoptim(lower=c(1000,1), upper=c(4000,5000),
-	fn=objectiveFunction, PDarray=PD1, type='cauchy', NP=40, trace=T)
-sine <- JDEoptim(lower=c(0,0,0), upper=c(1/1000,2*pi,1),
-	fn=objectiveFunction, PDarray=PD2, type='sine', NP=60, trace=T)
-logistic <- JDEoptim(lower=c(0,0), upper=c(1,10000),
-	fn=objectiveFunction, PDarray=PD3, type='logistic', NP=40, trace=T)
-exp <- JDEoptim(lower=c(0), upper=c(1),
-	fn=objectiveFunction, PDarray=PD3, type='exp', NP=20, trace=T)
-power <- JDEoptim(lower=c(0,-10), upper=c(10000,0),
-	fn=objectiveFunction, PDarray=PD3, type='power', NP=40, trace=T)
-
-```
-
-Note the upper boundaries for the sinewave (see [sinewavePDF()](../html/sinewavePDF.html) for details). 
-The first parameter governs the frequency, so should be constrained by a wavelength no shorter than c. 1/10th of the date range.  
-
-Now the MAP parameters need to be converted into a PDF and plotted:
-
-```{r, eval = FALSE}
-# convert parameters to model PDs
-years <- 1000:4000
-mod.norm <- convertPars(pars=norm$par, years, type='norm')
-mod.cauchy <- convertPars(pars=cauchy$par, years, type='cauchy')
-mod.sine <- convertPars(pars=sine$par, years, type='sine')
-mod.uniform <- convertPars(pars=NULL, years, type='uniform')
-mod.logistic <- convertPars(pars=logistic$par, years, type='logistic')
-mod.exp <- convertPars(pars=exp$par, years, type='exp')
-mod.power <- convertPars(pars=power$par, years, type='power')
-
-# Plot SPDs and various fitted models:
-par(mfrow=c(3,1), mar=c(4,4,1,1))
-cols <- c('steelblue','firebrick','orange')
-
-plotPD(spd1)
-lines(mod.norm, col=cols[1], lwd=5)
-lines(mod.cauchy, col=cols[2], lwd=5)
-legend(x=4000, y=max(spd1)*1.2, lwd=5, col=cols, bty='n', legend=c('Gaussian','Cauchy'))
-
-plotPD(spd2)
-lines(mod.sine, col=cols[1], lwd=5)
-lines(mod.uniform, col=cols[2], lwd=5)
-legend(x=4000, y=max(spd2)*1.2,  lwd=5, col=cols, bty='n', legend=c('Sinewave','Uniform'))
-
-plotPD(spd3)
-lines(mod.logistic, col=cols[1], lwd=5)
-lines(mod.exp, col=cols[2], lwd=5)
-lines(mod.power, col=cols[3], lwd=5)
-legend(x=4000, y=max(spd3)*1.2, lwd=5, col=cols, bty='n', legend=c('Logistic','Exponential','Power Law'))
-```
-![Examples of other models available in ADMUR](further_models.png){width=680px}  
 
 **********
 
-# 5. Combination models
+# 6. Modelling phase ranges
 
-ADMUR can also combine multiple models into a more complex aggregated model. For example, we might hypothesise that an island's population dynamics are driven by the combination of some regular climatic oscillations (perhaps from orbital forcing) and growth to carrying capacity, and therefore wish to use a model that is the combination of sinusoidal and logistic. This can be achieved by using a vector of model types, and combining all the required parameters into a single vector, in their respective order.
-For example:
+new section??
 
-```{r, eval = FALSE}
-# generate SPDs
-CalArray <- makeCalArray(intcal20, calrange = c(1000,4000))
-spd <- summedCalibrator(data2, CalArray, normalise='full')
-
-# calibrate phases
-PD <- phaseCalibrator(data2, CalArray, remove.external = TRUE)
-
-# MAP parameter search
-combo.sine.logistic <- JDEoptim(lower=c(0,0,0,0,0), upper=c(1/1000,2*pi,1,1,10000),
-	fn=objectiveFunction, PDarray=PD, type=c('sine','logistic'), NP=100, trace=T)
-	
-# Convert MAP parameters to a PDF
-mod.combo <- convertPars(pars=combo.sine.logistic$par, years, type=c('sine','logistic'))
-
-# Plot the SPD and the model
-
-```
-	
 **********
 
-# 5. Taphonomy
+# 7. Comparison with other calibration software
 
-Taphonomic loss has an important influence on the amount of datable material that can be recovered, with the obvious bias that older material is less likely to survive. This means that if a constant population deposited a perfectly uniform amount of material through time, we should expect the archaeological record to show an increase in dates towards the present, rather than a uniform distribution.
+It is worth noting that the algorithm used by this package to calibrate ^14^C dates gives practically equivalent results to those from [OxCal](https://c14.arch.ox.ac.uk/oxcal.html) generated using [oxcAAR](https://cran.r-project.org/package=oxcAAR) and [Bchron](https://cran.r-project.org/package=Bchron) 
 
-This taphonomic loss rate has been estimated by [Surovell et al.](https://doi.org/10.1016/j.jas.2009.03.029) and  [Bluhm and Surovell](https://doi.org/10.1017/qua.2018.78) who make a compelling argument that a power function $a(x+b)^c$  provides a useful model of taphonomic loss through time ($x$), providing not only a good statistical fit to empirical data, but is also consistent with the mechanism that datable material is subject to greater initial environmental degradation when first deposited on the ground surface compared to the increasing protection through time as it becomes cocooned from these forces. 
+![Comparison of calibration software for the ^14^C date: 3000 +/- 70 BP calibrated through intcal20.](software_compare_1.png)
 
-However, there are two important issues to consider when modelling taphonomy:
+However, there are two fringe circumstances where these software programs differ substantially: at the border of the calibration curve; and if a date has a large error.
 
-1. There is substantial uncertainty regarding the values of the parameters that determine the shape of the power function. We should expect different taphonomic rates in different locations due to variation in environmental and geological conditions. Indeed these studies have estimated different parameter values for the two datasets used. 
-1. There is a common misunderstanding that the taphonomic curve can be used to 'adjust' or 'correct' the data or an SPD to generate a more faithful representation of the true population dynamics. In fact the inclusion of taphonomy is achieved with additional appropriate model parameters, resulting in a more complex model. Whether or not this greater complexity is justified is moot - the decision to include or exclude cannot be resolved with model comparison and should be justified with an independent argument. When comparing models using BIC, all should be consistent in either including or excluding taphonomic curve parameters.
+### Edge effects 
 
-## Taphonomic curve parameters
+Consider the real ^14^C date [MAMS-13035] <https://doi.org/10.1016/j.aeae.2015.11.003>  age: 50524 +/- 833 BP calibrated through intcal13, which only extends to 46401BP. Bchron throws an error, whilst OxCal applies a one-to-one mapping between Conventional Radiocarbon (CRA) time and calendar time for any date (mean) beyond the range of the calibration curve. The latter is in theory a reasonable way to mitigate the problem, however OxCal applies this in a binary manner that can create peculiarities. Instead ADMUR gradually fades the calibration curve to a one-to-one mapping between the end of the curve and 60,000 BP. 
 
-The above studies use regression methods to estimate the taphonomic curve parameters. These methods don't incorporate the full information of the calibrated 14C dates (instead a point estimate is used for each date), and therefore are not based on likelihoods. Nor do they provide confidence intervals for the curve parameters. Finally, the parameter $a$ is unnecessary for the purposes of population modelling, since we are not interested in estimating the *absolute* loss in material, merely the *relative* loss through time. Therefore we can consider the taphonomic curve as a PDF such that the total area across the study period equals 1. This results in the following formula, where $x$ is time, and $x_{min}$ and $x_{max}$ are the time boundaries of the study period: $$\frac{(c+1)(b+x)^c}{(b+x_{max})^{(c+1)} - (b+x_{min})^{(c+1)}}$$ 
+![Comparison of calibration software at the limits of intcal13. OxCal and Bchron produce a truncated distribution for date C. Bchron cannot calibrate date D, and OxCal suggests date D is younger than dates A, B and C. ADMUR performs a soft fade at the limit of the calibration curve.](software_compare_2.png)
 
-This defines ADMUR's power model PDF which we apply within the MCMC framework to estimate the joint parameter distributions of $b$ and $c$ from the same two datasets used in the above studies, constraining the study period (as Bluhm and Surovell did) to between 1kyr and 40kyr BP as follows:
+### Large errors 
 
-```{r, eval = FALSE}
-# generate an PD array for each dataset
-years <- seq(1000,40000,by=50)
-CalArray <- makeCalArray(intcal20, calrange = c(1000,40000),inc=50)
-PD1 <- phaseCalibrator(bryson1848, CalArray, remove.external = TRUE)
-PD2 <- phaseCalibrator(bluhm2421, CalArray, remove.external = TRUE)
+A ^14^C date is typically reported as a mean date with an error, which is often interpreted as representing a symmetric Gaussian distribution before calibration. However, a Gaussian has a non-zero probability at all possible years (between -$\infty$ and +$\infty$), and therefore cannot fairly represent the date uncertainty which must be skewed towards the past. Specifically, if we consider the date in CRA time, it must have a zero probability of occurring in the future. Alternatively, if we consider the date as a ^14^C/^12^C ratio, it cannot be smaller than 1 (the present). Therefore ADMUR assumes a ^14^C date error is lognormally distributed with a mean equal to the CRA date, and a variance equal to the CRA error squared. This naturally skews the distribution away from the present. In practice, this difference is undetectably trivial for typical radiocarbon errors since the lognormal distribution approximates a normal distribution away from zero. However, theoretically the differences can be large if considering dates with large errors that are close to the present.
 
-# MCMC search
-chain.bryson <- mcmc(PDarray=PD1, 
-		startPars=c(10000,-1.5), 
-		type='power', N=50000, 
-		burn=2000, 
-		thin=5, 
-		jumps =c(250,0.075)) 
-		
-chain.bluhm <- mcmc(PDarray=PD2, 
-	startPars=c(10000,-1.5), 
-	type='power', N=50000, 
-	burn=2000, 
-	thin=5, 
-	jumps =c(250,0.075))
+![Comparison of calibration software for the ^14^C dates 15000 +/- 9000 BP, 15000 +/- 3000 BP and 15000 +/- 1000 BP, using intcal13. The total probability mass of each of the nine curves equals 1. Differences are apparent if a date has a large error (top tile): Bchron assumes the CRA error is Normally distributed, resulting in a truncated curve with a substantial probability at present. OxCal produces a heavily skewed distribution with a low probability at present and a substantial probability at 50,000 BP that suddenly truncates to zero beyond this. ADMUR assumes the CRA error is Lognormally distributed, which is indistinguishable from a normal distribution for typical errors, but naturally prevents any probability mass occurring at the present or future when errors are large.](software_compare_3.png)
 
-# convert parameters to taphonomy curves
-curve.bryson <- convertPars(chain.bryson$res, type='power', years=years)
-curve.bluhm <- convertPars(chain.bluhm$res, type='power', years=years)
 
-# plot
-plot(NULL, xlim=c(0,12000),ylim=c(-2.5,-1), xlab='parameter b', ylab='parameter c')
-points(chain.bryson$res, col=cols[1])
-points(chain.bluhm$res, col=cols[2])
+**********
 
-plot(NULL, xlim=c(0,40000),ylim=c(0,0.00025), xlab='yrs BP', ylab='PD')
-N <- nrow(chain.bryson$res)
-for(n in sample(1:N,size=1000)){
-	lines(years,curve.bryson[n,], col=cols[1])
-	lines(years,curve.bluhm[n,], col=cols[2])
-	}
-```
-![Joint taphonomic parameter estimates (and equivalent curves) from the MCMC chain generated in ADMUR using datasets used in Surovell et al. 2009 and Bluhm and Surovell 2018](taphonomy_bryson_bluhm.png){width=680px}  
+# 8. Citations
 
-Clearly the taphonomic parameters $b$ and $c$ are highly correlated, and although the curves superficially appear very similar, the parameters differ significantly between the two datasets. 
-
-## Including taphonomy in a model
-
-### MAP Search
-
-Taphonomy can be included in any ADMUR model by including 'power' model parameters (taphonomic parameters $b$ and $c$). We suggest constraining these parameters to $0 < b < 20000$ and $-3 < c < 0$, but if there is better prior knowledge of this range (perhaps an independent dataset based on volcanic eruptions for the same study area) then this can be further constrained accordingly.
-
-For example, we might perform a MAP search using the previously generated PD array, to find the best 3-CPL model with and without taphonomy as follows:
-```{r, eval = FALSE}
-best <- JDEoptim(lower=c(0,0,0,0,0),
-	upper=c(1,1,1,1,1), 
-	fn=objectiveFunction, 
-	PDarray=PD, 
-	type='CPL',
-	trace=T, 
-	NP=100) 
-	
-best.taph <- JDEoptim(lower=c(0,0,0,0,0,0,-3), 
-	upper=c(1,1,1,1,1,20000,0), 
-	fn=objectiveFunction, 
-	PDarray=PD, 
-	type=c('CPL','power'),
-	trace=T, 
-	NP=140) 
-```
-
-These parameters can then be converted to model PDFs and plotted:
-
-```{r, echo = FALSE}
-load('vignette.3CPL.JDEoptim.best.RData')
-load('vignette.3CPL.JDEoptim.best.taph.RData')
-```
-
-```{r, eval = TRUE, fig.height = 4, fig.width=7, fig.align = "center", dev='jpeg', quality=100, warning=FALSE}
-CPL <- convertPars(pars=best$par, years=5500:7500, type='CPL')
-CPL.taph <- convertPars(pars=best.taph$par, years=5500:7500, type=c('CPL','power'))
-
-SPD <- summedPhaseCalibrator( data=data, calcurve=shcal20, calrange=c(5500,7500) )
-plotPD(SPD)
-lines(CPL$year, CPL$pdf, lwd=2, col=cols[1])
-lines(CPL.taph$year, CPL.taph$pdf, lwd=2, col=cols[2])
-legend(x=6300,y=0.001,legend=c('3-CPL','3-CPL with taphonomy'),bty='n',col=cols[1:2],lwd=2,cex=0.7)
-```
-
-The above *3-CPL with taphonomy* model represents a conflation of two model components: the population dynamics and the taphonomic loss. Instead we are interested in separating these components:
-```{r, eval = TRUE, fig.height = 4, fig.width=7, fig.align = "center", dev='jpeg', quality=100, warning=FALSE}
-pop <- convertPars(pars=best.taph$par[1:5], years=5500:7500, type='CPL')
-taph <- convertPars(pars=best.taph$par[6:7], years=5500:7500, type='power')
-plotPD(pop)
-title('Population dynamics')
-plotPD(taph)
-title('Taphonomic loss')
-```
-
-Finally the hinge coordinates of the population dynamics can be extracted:
+Citations are available as follows:
 ```{r, eval = TRUE}
-CPLparsToHinges(pars=best.taph$par[1:5], years=5500:7500)
+citation('ADMUR')
 ```
-
-### MCMC search for credible intervals
-
-We should always be cautious of assigning too much importance to point estimates. MAP estimates above are no exception to this. Smaller sample sizes will always result in larger uncertainties, and it is always better to estimate the plausible range of results. This is of particular concern with taphonomic parameters since the reanalysis of the volcanic datasets above illustrates how a large range of parameter combinations provide very similar taphonomic curves. Furthermore, when including taphonomy in the model, the taphonomic parameters have the potential to interact with the population dynamics parameters in vastly more parameter combinations that will give in many different combinations of similar overall radiocarbon date distributions. 
-Therefore we can perform an MCMC parameter search as follows:
-
-```{r, eval = FALSE}
-chain.taph <- mcmc(PDarray = PD, 
-	startPars = c(0.5,0.5,0.5,0.5,0.5,10000,-1.5), 
-	type=c('CPL','power'), 
-	N = 30000, 
-	burn = 2000, 
-	thin = 5, 
-	jumps = 0.025)
-```
-
-These can then be separated into population dynamics parameters and taphonomic parameters for either direct plotting, or converted to model PDFs and plotted:
-
-```{r, eval = FALSE}
-# convert parameters into model PDFs
-pop <- convertPars(pars=chain.taph$res[,1:5], years=5500:7500, type='CPL')
-taph <- convertPars(pars=chain.taph$res[,6:7], years=seq(1000,30000,by=50), type='power')
-
-# plot population dynamics PDF
-plot(NULL, xlim=c(7500,5500),ylim=c(0,0.0013), xlab='calBP', ylab='PD', las=1)
-for(n in 1:nrow(pop))lines(5500:7500, pop[n,],col=alpha(1,0.05))
-
-# plot taphonomy PDF
-plot(NULL, xlim=c(30000,0),ylim=c(0,0.00025), xlab='calBP', ylab='PD',las=1,)
-for(n in 1:nrow(taph))lines(seq(1000,30000,by=50), taph[n,],col=alpha(1,0.02))
-
-# plot taphonomic parameters
-plot(NULL, xlim=c(0,20000),ylim=c(-3,0), xlab='parameter b', ylab='parameter c',las=1)
-for(n in 1:nrow(chain.taph$res))points(chain.taph$res[n,6], chain.taph$res[n,7],col=alpha(1,0.2),pch=20)
-```
-
-![Joint posterior distributions of population dynamics only.](mcmc_pop_without_taph.png){width=680px}
- 
-![Joint posterior distributions of taphonomy only. Clearly there is not enough information content in such a small toy dataset to narrow the taphonomic parameters better than the initial prior constraints](mcmc_taph.png){width=680px} 
 
 **********
 

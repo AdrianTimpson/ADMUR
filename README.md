@@ -73,4 +73,5 @@ Also thanks to the following who have reported bugs, requested additional functi
 - Enrico Crema
 - Ricardo Fernandes
 - Mark G. Thomas
+- Robert Staniuk
 ---
