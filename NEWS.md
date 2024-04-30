@@ -7,7 +7,10 @@
 
 # ADMUR build history
 
-### Version: 1.0.3.9005
+### Version: 1.0.3.
+
+## 2024-04-30
+* Major speed up for estimateDataDomain function
 
 ## 2023-09-15
 * Truncated models only for populaton dynamics clearly distinguished from phase models.

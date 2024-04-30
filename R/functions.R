@@ -729,22 +729,15 @@ simulateCalendarDates <- function(model, n){
 return(dates)}
 #--------------------------------------------------------------------------------------------
 estimateDataDomain <- function(data, calcurve){
+	
+	min.c14 <- min(data$age - 4*data$sd)
+	max.c14 <- max(data$age + 4*data$sd)
+	calcurve$min <- calcurve$C14 - 4*calcurve$error
+	calcurve$max <- calcurve$C14 + 4*calcurve$error
 
-	thresholds <- c(60000,20000,4000)
-	incs <- c(100,20,1)
-	min.year <- 0
-	max.year <- 60000
-	for(n in 1:length(incs)){
-		if((max.year - min.year) > thresholds[n])return(c(min.year, max.year))
-		if((max.year - min.year) <= thresholds[n]){
+	min.year <- max(calcurve$cal[calcurve$max<min.c14])
+	max.year <- min(calcurve$cal[calcurve$min>max.c14])
 
-			CalArray <- makeCalArray(calcurve, calrange = c(min.year, max.year), inc = incs[n])
-			SPD <- summedCalibrator(data, CalArray)
-			cum <- cumsum(SPD[,1])/sum(SPD)
-			min.year <- CalArray$cal[min(which(cum>0.000001)-1)]
-			max.year <- CalArray$cal[max(which(cum<0.999999)+2)]
-			}
-		}
 return(c(min.year, max.year))}
 #--------------------------------------------------------------------------------------------
 SPDsimulationTest <- function(data, calcurve, calrange, pars, type, inc=5, N=20000, timeseries=NULL){

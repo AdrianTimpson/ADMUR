@@ -15,11 +15,8 @@
 	Returns a vector of two calendar dates BP.
 	}
 \details{
-Since dates are derived from normal (or log normal) distributions, they have no absolute cut off point. However, in practice the tail of a PDF rapidly becomes vanishingly small, so a date range can be estimated using an arbitrarily large interval (0.000001 to 0.999999) of the cumulative distribution.
-
-In practice however, the date range chosen to model should not be selected using this function, but carefully chosen to ensure the date range is fairly represented by the data set.
-
-Therefore this function should only be used to select a date range to model if simulating a tiny sample size, to ensure the modelled range does not exceed the date domain of the data.
+Since dates are derived from normal (or log normal) distributions, they have no absolute cut off point. 
+However, in practice the tail of a PDF rapidly becomes vanishingly small, so a date range can be estimated using an arbitrarily large interval of the cumulative distribution.
 	}
 \examples{
 \donttest{
