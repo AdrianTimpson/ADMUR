@@ -22,6 +22,6 @@ The pdf of the semi-ellipse (the top half of an ellipse) is defined as:  \mjseqn
 \examples{
 	x <- seq(1:500)
 	y <- dellipse(x, min = 100, max=300)
-	plot(x,y)
+	plot(x,y,type='l')
 	}
 

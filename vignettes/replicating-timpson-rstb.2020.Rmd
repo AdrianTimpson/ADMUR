@@ -647,7 +647,7 @@ for(n in 1:1000){
 lines(ML$year, ML$pdf,col='firebrick',lwd=2)
 axis(1,at=seq(14000,3000,by=-1000), labels=seq(14,3,by=-1))
 text(x=ML$year, y=ML$pdf + c(-0.00002,-0.00002,0.00002,0.00002), labels=rev(c('A','B','C','D')))
-legend(legend=c('Maximum Likelihood model PDF','Model PDF sampled from joint posterior parameters'),
+legend(legend=c('Maximum Likelihood model PDF','Model PDF sampled from joint parameter distribution'),
 	x = 6000,y = 0.00024,cex = 0.7,bty = 'n',border = NA, xjust = 1, lwd=c(2,1), col=c(red,grey3))
 
 plot(NULL,xlim=c(14000,2500),ylim=c(0,0.00025),xlab='kyr cal BP',xaxt='n', ylab='PD', las=1, cex.axis=0.7)
@@ -661,7 +661,7 @@ points(hinges$yr2,hinges$pdf2,pch=20,col=alpha(red,alpha=a),cex=cex)
 points(hinges$yr3,hinges$pdf3,pch=20,col=alpha(red,alpha=a),cex=cex)
 points(hinges$yr4,hinges$pdf4,pch=20,col=alpha(red,alpha=a),cex=cex)
 axis(1,at=seq(14000,3000,by=-1000), labels=seq(14,3,by=-1))
-legend(legend=c('Joint posterior parameters','50% CI of model PDF','75% CI of model PDF','95% CI of model PDF'),
+legend(legend=c('Joint parameter distribution','50% CI of model PDF','75% CI of model PDF','95% CI of model PDF'),
 		x = 10000,y = 0.00024,cex = 0.7,bty = 'n',border = NA, xjust = 1,
 		pch = c(16,NA,NA,NA),
 		col = c(red,NA,NA,NA),

@@ -14,9 +14,6 @@
 \value{
 	Returns a single numeric log likelihood.
 	}
-\details{
-Row names of both PD and model arguments must exactly match, since the probability of each phase given the model is calculated numerically.
-	}
 \examples{
 	# calibrate a dataset comprising just two phases
 	data <- data.frame(age=c(5800, 5100),sd=c(40, 35),phase=c('p1', 'p2'), datingType='14C')

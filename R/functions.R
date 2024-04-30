@@ -954,7 +954,9 @@ return(pdf)}
 #----------------------------------------------------------------------------------------------
 dellipse <- function(x,min,max){
 	radius <- (max-min)/2
-	num <- sqrt( radius^2 - (x-((max+min)/2))^2)
+	tmp <- radius^2 - (x-((max+min)/2))^2
+	tmp[tmp<0] <- 0
+	num <- sqrt(tmp)
 	denom <- 0.5 * pi * radius^2
 	pdf <- num/denom
 return(pdf)}
