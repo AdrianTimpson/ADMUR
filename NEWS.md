@@ -7,7 +7,13 @@
 
 # ADMUR build history
 
-### Version: 1.0.3.
+### Version: 1.0.3.9005
+
+## 2024-05-01
+* phaseModel function added.
+
+## 2024-05-01
+* dateCalibration function added.
 
 ## 2024-04-30
 * Major speed up for estimateDataDomain function

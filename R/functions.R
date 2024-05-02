@@ -4,7 +4,7 @@
 
 #--------------------------------------------------------------------------------------------	
 # global variables
-if(getRversion() >= "2.15.1")  utils::globalVariables(c('age','datingType','site','calBP','phase','intcal20'))
+if(getRversion() >= "2.15.1")  utils::globalVariables(c('intcal20'))
 #--------------------------------------------------------------------------------------------
 getTruncatedModelChoices <- function(){
 	# Required in several functions, so avoids duplication if others are added to the package
@@ -65,7 +65,8 @@ checkData <- function(data){
 	bad1 <- subset(data, sd<15)
 	bad2 <- data[(data$age/data$sd)>1000,]
 	bad3 <- data[(data$sd/data$age)>0.5,]
-	bad4 <- subset(data, age<100 | age>57000)
+	bad4 <- data[data$age<100 | data$age>57000,]
+
 	bad <- unique(rbind(bad1,bad2,bad3,bad4))
 
 	if(x=='good' & nrow(bad)==0)print('No obvious clangers found')
@@ -194,7 +195,7 @@ chooseCalrange <- function(data,calcurve){
 	calmin <- min <- calmax <- max <- NA
 
 	# choose a reasonable calrange for the 14C data
-	C14.data <- subset(data,datingType=='14C')
+	C14.data <- data[data$datingType=='14C',]
 	if(nrow(C14.data)>0){
 		c14min <- min(C14.data$age - 5*pmax(C14.data$sd,20))
 		c14max <- max(C14.data$age + 5*pmax(C14.data$sd,20))
@@ -203,7 +204,7 @@ chooseCalrange <- function(data,calcurve){
 		}
 
 	# choose a reasonable calrange for the nonC14 data
-	nonC14.data <- subset(data,datingType!='14C')
+	nonC14.data <- data[data$datingTyp!='14C',]
 	if(nrow(nonC14.data)>0){
 		min <- min(nonC14.data$age - 5*pmax(nonC14.data$sd,20))
 		max <- max(nonC14.data$age + 5*pmax(nonC14.data$sd,20))
@@ -229,8 +230,8 @@ binner <- function(data, width, calcurve){
 	if(!'datingType'%in%names(data))stop('data format must be data frame with datingType')
 
 	# approximate nonC14 dates ito C14 time, so they can also be binned
-	data.C14 <- subset(data,datingType=='14C')
-	data.nonC14 <- subset(data,datingType!='14C')
+	data.C14 <- data[data$datingType=='14C',]
+	data.nonC14 <- data[data$datingType!='14C',]
 	data.C14$c14age <- data.C14$age
 	if(nrow(data.nonC14)>0)data.nonC14$c14age <- approx(x=calcurve$cal, y=calcurve$C14, xout=data.nonC14$age)$y
 	data <- rbind(data.C14,data.nonC14)
@@ -240,7 +241,7 @@ binner <- function(data, width, calcurve){
 	# binning
 	end <- 0
 	for(s in unique(data$site)){
-		site.data <- subset(data,site==s)
+		site.data <- data[data$site==s,]
 		bins <- c()
 		gaps <- c(0,diff(site.data$c14age))
 		bin <- 1
@@ -270,7 +271,7 @@ internalCalibrator <- function(data, CalArray){
 	if(attr(CalArray, 'creator')!= 'makeCalArray') stop('CalArray was not made by makeCalArray()' )
 
 	if(nrow(data)==0){
-		result <- data.frame(calBP=CalArray$cal,prob=0)
+		result <- data.frame('calBP'=CalArray$cal,prob=0)
 		return(result)
 		}
 	
@@ -307,8 +308,8 @@ internalCalibrator <- function(data, CalArray){
 	cal.prob <- as.numeric(crossprod(as.numeric(c14.prob),CalArray$prob/c14.prior))
 
 	# truncate to the required range
-	result <- data.frame(calBP=as.numeric(colnames(CalArray$prob)),prob=cal.prob)
-	result <- subset(result, calBP>=min(CalArray$calrange) & calBP<=max(CalArray$calrange))
+	result <- data.frame('calBP'=as.numeric(colnames(CalArray$prob)),prob=cal.prob)
+	result <- result[result$calBP>=min(CalArray$calrange) & result$calBP<=max(CalArray$calrange),,drop=FALSE]
 
 return(result)}
 #--------------------------------------------------------------------------------------------
@@ -335,12 +336,12 @@ summedCalibrator <- function(data, CalArray, normalise = 'standard', checks = TR
 		}
 
 	# C14
-	C14.data <- subset(data, datingType=='14C')
+	C14.data <- data[data$datingType=='14C',,drop=FALSE]
 	C14.PD <- internalCalibrator(C14.data, CalArray)$prob
 	C14.PD <- C14.PD/CalArray$inc # PD needs dividing by inc to convert area to height (PMF to PDF). Not required for nonC14, as dnorm() already generated PDF
 
 	# nonC14
-	nonC14.data <- subset(data, datingType!='14C')
+	nonC14.data <- data[data$datingType!='14C',,drop=FALSE]
 	n <- nrow(nonC14.data)
 	nonC14.PD <- colSums(matrix(dnorm(rep(CalArray$cal,each=n), nonC14.data$age, nonC14.data$sd),n,length(CalArray$cal)))
 
@@ -371,6 +372,21 @@ summedCalibrator <- function(data, CalArray, normalise = 'standard', checks = TR
 	names(result) <- NULL
 return(result)}
 #--------------------------------------------------------------------------------------------	
+dateCalibrator <- function(data, CalArray){
+
+	# argument checks
+	if(attr(CalArray, 'creator')!= 'makeCalArray') stop('CalArray was not made by makeCalArray()' )
+	if(nrow(data)==0)return(NULL)
+ 	if(checkDataStructure(data)=='bad')stop()
+
+	# generates matrix of calibrated dates
+	result <- matrix(0,length(CalArray$cal),nrow(data))
+	for(n in 1:nrow(data))result[,n] <- internalCalibrator(data[n,], CalArray)$prob
+
+	row.names(result) <- CalArray$cal
+	names(result) <- NULL
+return(result)}
+#--------------------------------------------------------------------------------------------	
 phaseCalibrator <- function(data, CalArray, width = 200, remove.external = FALSE){
 	
 	# generates a normalised SPD for every phase, phasing data through binner if required
@@ -396,7 +412,7 @@ phaseCalibrator <- function(data, CalArray, width = 200, remove.external = FALSE
 	phase.SPDs <- array(0,c(length(CalArray$cal),length(phases)))
 
 	for(p in 1:length(phases)){
-		phase.data <- subset(data,phase==phases[p])
+		phase.data <- data[data$phase==phases[p],,drop=FALSE]
 		phase.SPDs[,p] <- summedCalibrator(phase.data, CalArray, normalise = 'standard', checks = FALSE)[,1]
 		}
 
@@ -442,6 +458,49 @@ summedPhaseCalibrator <- function(data, calcurve, calrange, inc=5, width=200){
 	names(SPD) <- NULL
 return(SPD)}
 #--------------------------------------------------------------------------------------------	
+phaseModel <- function(data, calcurve, prior.matrix, plot=FALSE){
+
+	# Calculate the likelihood for all model (gaussian) parameter values
+	# The relative likelihood of a date with uncertainty is an average of the model PDF, weighted by the date probabilities.
+	# Numerically this is the scalar product: sum of (model PDF x date PDF).
+
+	mu <- as.numeric(row.names(prior.matrix))
+	sigma <- as.numeric(colnames(prior.matrix))
+
+	# generate a calibrated PD for each date in the phase
+	calrange <- estimateDataDomain(data, calcurve)
+	inc <- 5; if(min(sigma)<5)inc <- 1 # sigma values below the resolution are silly
+	CalArray <- makeCalArray(calcurve, calrange, inc)
+	PD <- dateCalibrator(data, CalArray)
+
+	# calculate the likelihoods for each phase, across the full parameter domain
+	years <- as.numeric(row.names(PD))
+	lik <- matrix(1,nrow(prior.matrix),ncol(prior.matrix)) 
+	for(n in 1:nrow(data))for(c in 1:ncol(lik)){
+		lik[,c] <- lik[,c] * colSums(matrix(dnorm(rep(years,length(mu)),rep(mu,each=length(years)),sigma[c]),length(years),length(mu))*PD[,n])
+		}
+	posterior <- prior.matrix * lik
+	posterior <- posterior/sum(posterior)
+
+	# return the full posterior, the calibrated dates, and useful summary stats
+	mean.mu <- round(sum(mu * rowSums(posterior)))
+	mean.sigma <- round(sum(sigma * colSums(posterior)))
+	res <- list(PD=PD, posterior=posterior, mean.mu=mean.mu, mean.sigma=mean.sigma)
+
+	# plotting if required
+	if(plot){
+		par(mfrow=c(1,3))
+		plotPD(PD)
+		image(posterior,x=as.numeric(row.names(posterior)), y=as.numeric(colnames(posterior)),xlab='mu',ylab='sigma', main='Joint posterior parameters')
+		points(x=mean.mu, y=mean.sigma, pch=16, cex=2)
+		abline(v=mean.mu)
+		abline(h=mean.sigma)
+		years <- as.numeric(row.names(PD))
+		mod <- dnorm(years, mean.mu, mean.sigma)
+		plot(years, mod*inc, xlab='calBP',ylab='PD', type='l',lwd=2, bty='n', xlim=rev(range(years)),ylim=c(0,max(mod)*inc),main=paste('Phase model using weighted mean posteriors: mu =',mean.mu,', sigma =',mean.sigma))
+		}
+return(res)}
+#--------------------------------------------------------------------------------------------
 uncalibrateCalendarDates <- function(dates, calcurve){
 
 	# dates: vector of calendar dates (point estimates)
