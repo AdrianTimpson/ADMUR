@@ -466,19 +466,26 @@ phaseModel <- function(data, calcurve, prior.matrix, plot=FALSE){
 
 	mu <- as.numeric(row.names(prior.matrix))
 	sigma <- as.numeric(colnames(prior.matrix))
+	lik <- 1
+	PD <- NA
 
-	# generate a calibrated PD for each date in the phase
-	calrange <- estimateDataDomain(data, calcurve)
-	inc <- 5; if(min(sigma)<5)inc <- 1 # sigma values below the resolution are silly
-	CalArray <- makeCalArray(calcurve, calrange, inc)
-	PD <- dateCalibrator(data, CalArray)
+	cond <- nrow(data)>0
+	if(cond){
 
-	# calculate the likelihoods for each phase, across the full parameter domain
-	years <- as.numeric(row.names(PD))
-	lik <- matrix(1,nrow(prior.matrix),ncol(prior.matrix)) 
-	for(n in 1:nrow(data))for(c in 1:ncol(lik)){
-		lik[,c] <- lik[,c] * colSums(matrix(dnorm(rep(years,length(mu)),rep(mu,each=length(years)),sigma[c]),length(years),length(mu))*PD[,n])
-		}
+		# generate a calibrated PD for each date in the phase
+		calrange <- estimateDataDomain(data, calcurve)
+		inc <- 5; if(min(sigma)<5)inc <- 1 # sigma values below the resolution are silly
+		CalArray <- makeCalArray(calcurve, calrange, inc)
+		PD <- dateCalibrator(data, CalArray)
+
+		# calculate the likelihoods for each phase, across the full parameter domain
+		years <- as.numeric(row.names(PD))
+		lik <- matrix(1,nrow(prior.matrix),ncol(prior.matrix)) 
+		for(n in 1:nrow(data))for(c in 1:ncol(lik)){
+			lik[,c] <- lik[,c] * colSums(matrix(dnorm(rep(years,length(mu)),rep(mu,each=length(years)),sigma[c]),length(years),length(mu))*PD[,n])
+			}
+	}
+
 	posterior <- prior.matrix * lik
 	posterior <- posterior/sum(posterior)
 
@@ -488,7 +495,7 @@ phaseModel <- function(data, calcurve, prior.matrix, plot=FALSE){
 	res <- list(PD=PD, posterior=posterior, mean.mu=mean.mu, mean.sigma=mean.sigma)
 
 	# plotting if required
-	if(plot){
+	if(plot & cond){
 		par(mfrow=c(1,3))
 		plotPD(PD)
 		image(posterior,x=as.numeric(row.names(posterior)), y=as.numeric(colnames(posterior)),xlab='mu',ylab='sigma', main='Joint posterior parameters')
