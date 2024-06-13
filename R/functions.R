@@ -458,14 +458,27 @@ summedPhaseCalibrator <- function(data, calcurve, calrange, inc=5, width=200){
 	names(SPD) <- NULL
 return(SPD)}
 #--------------------------------------------------------------------------------------------	
-phaseModel <- function(data, calcurve, prior.matrix, plot=FALSE){
+getPhaseModelChoices <- function(){
+	names <- c('uniform','norm','cauchy','ellipse')
+	n.pars <- c(2,2,2,2)
+	pars <- c('min, max','mu, sigma','location, scale','min, max')
+	description <- c(	'Uniform PDF beween min and max',
+						'Gaussian PDF',
+						'Cauchy PDF',
+						'Semi-ellipse PDF, i.e. an arch, between min and max')
+	model.choices <- data.frame(names=names,n.pars=n.pars,pars=pars,description=description)
+return(model.choices)}
+#--------------------------------------------------------------------------------------------
+phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 
-	# Calculate the likelihood for all model (gaussian) parameter values
+	# Calculate the likelihood for all model parameter values
 	# The relative likelihood of a date with uncertainty is an average of the model PDF, weighted by the date probabilities.
-	# Numerically this is the scalar product: sum of (model PDF x date PDF).
 
-	mu <- as.numeric(row.names(prior.matrix))
-	sigma <- as.numeric(colnames(prior.matrix))
+	model.options <- getPhaseModelChoices()
+	if(!model%in%model.options$names)stop(paste(model,'is not in options of',paste(model.options,collapse=',')))
+
+	p1 <- as.numeric(row.names(prior.matrix))
+	p2 <- as.numeric(colnames(prior.matrix))
 	lik <- 1
 	PD <- NA
 
@@ -474,7 +487,8 @@ phaseModel <- function(data, calcurve, prior.matrix, plot=FALSE){
 
 		# generate a calibrated PD for each date in the phase
 		calrange <- estimateDataDomain(data, calcurve)
-		inc <- 5; if(min(sigma)<5)inc <- 1 # sigma values below the resolution are silly
+		inc <- 5
+		if(model=='norm' & min(p2)<5)inc <- 1 # sigma values below the resolution are silly
 		CalArray <- makeCalArray(calcurve, calrange, inc)
 		PD <- dateCalibrator(data, CalArray)
 
@@ -482,7 +496,18 @@ phaseModel <- function(data, calcurve, prior.matrix, plot=FALSE){
 		years <- as.numeric(row.names(PD))
 		lik <- matrix(1,nrow(prior.matrix),ncol(prior.matrix)) 
 		for(n in 1:nrow(data))for(c in 1:ncol(lik)){
-			lik[,c] <- lik[,c] * colSums(matrix(dnorm(rep(years,length(mu)),rep(mu,each=length(years)),sigma[c]),length(years),length(mu))*PD[,n])
+
+			if(model=='norm'){
+				mu <- p1
+				sigma <- p2
+				lik[,c] <- lik[,c] * colSums(matrix(dnorm(rep(years,length(mu)),rep(mu,each=length(years)),sigma[c]),length(years),length(mu))*PD[,n])
+				}
+
+			if(model=='ellipse'){
+				min <- p1
+				max <- p2
+				lik[,c] <- lik[,c] * colSums(matrix(dellipse(rep(years,length(min)),rep(min,each=length(years)),max[c]),length(years),length(min))*PD[,n])
+				}
 			}
 	}
 
@@ -490,21 +515,23 @@ phaseModel <- function(data, calcurve, prior.matrix, plot=FALSE){
 	posterior <- posterior/sum(posterior)
 
 	# return the full posterior, the calibrated dates, and useful summary stats
-	mean.mu <- round(sum(mu * rowSums(posterior)))
-	mean.sigma <- round(sum(sigma * colSums(posterior)))
-	res <- list(PD=PD, posterior=posterior, mean.mu=mean.mu, mean.sigma=mean.sigma)
+	mean.p1 <- round(sum(p1 * rowSums(posterior)))
+	mean.p2 <- round(sum(p2 * colSums(posterior)))
+	res <- list(PD=PD, posterior=posterior, mean.p1=mean.p1, mean.p2=mean.p2)
+	par.names <- strsplit(model.options$pars[model.options$names==model],split=', ')[[1]]
+	names(res)[3:4] <- par.names	
 
 	# plotting if required
 	if(plot & cond){
 		par(mfrow=c(1,3))
 		plotPD(PD)
-		image(posterior,x=as.numeric(row.names(posterior)), y=as.numeric(colnames(posterior)),xlab='mu',ylab='sigma', main='Joint posterior parameters')
-		points(x=mean.mu, y=mean.sigma, pch=16, cex=2)
-		abline(v=mean.mu)
-		abline(h=mean.sigma)
+		image(posterior,x=as.numeric(row.names(posterior)), y=as.numeric(colnames(posterior)),xlab=par.names[1],ylab=par.names[2], main='Joint posterior parameters')
+		points(x=mean.p1, y=mean.p2, pch=16, cex=2)
+		abline(v=mean.p1)
+		abline(h=mean.p2)
 		years <- as.numeric(row.names(PD))
-		mod <- dnorm(years, mean.mu, mean.sigma)
-		plot(years, mod*inc, xlab='calBP',ylab='PD', type='l',lwd=2, bty='n', xlim=rev(range(years)),ylim=c(0,max(mod)*inc),main=paste('Phase model using weighted mean posteriors: mu =',mean.mu,', sigma =',mean.sigma))
+		if(model=='norm')mod <- dnorm(years, mean.p1, mean.p2)
+		plot(years, mod*inc, xlab='calBP',ylab='PD', type='l',lwd=2, bty='n', xlim=rev(range(years)),ylim=c(0,max(mod)*inc),main=paste('Phase model using weighted mean posteriors:',par.names[1],'=',mean.p1, par.names[2],'=',mean.p2))
 		}
 return(res)}
 #--------------------------------------------------------------------------------------------

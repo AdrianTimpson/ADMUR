@@ -9,6 +9,9 @@
 
 ### Version: 1.0.3.9005
 
+## 2024-06-13
+* Ellipsoid model added to phaseModel.
+
 ## 2024-05-01
 * phaseModel function added.
 
