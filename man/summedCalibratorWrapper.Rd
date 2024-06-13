@@ -2,7 +2,7 @@
 \alias{summedCalibratorWrapper} 
 \title{Quick calibration of dates, without the need to choose a date range or generate a CalArray} 
 \description{Wrapper function that easily generates and plots an SPD, at the cost of some user control}
-\usage{summedCalibratorWrapper(data, calcurve = intcal20, plot = TRUE)}
+\usage{summedCalibratorWrapper(data, calcurve = NULL, plot = TRUE)}
 \arguments{
   \item{data}{
 	A dataframe of 14C dates. Requires 'age' and 'sd'.

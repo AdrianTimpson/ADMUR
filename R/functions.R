@@ -4,7 +4,7 @@
 
 #--------------------------------------------------------------------------------------------	
 # global variables
-if(getRversion() >= "2.15.1")  utils::globalVariables(c('intcal20'))
+# if(getRversion() >= "2.15.1")  utils::globalVariables(c())
 #--------------------------------------------------------------------------------------------
 getTruncatedModelChoices <- function(){
 	# Required in several functions, so avoids duplication if others are added to the package
@@ -426,7 +426,7 @@ phaseCalibrator <- function(data, CalArray, width = 200, remove.external = FALSE
 
 return(phase.SPDs)}
 #--------------------------------------------------------------------------------------------	
-summedCalibratorWrapper <- function(data, calcurve=intcal20, plot=TRUE){
+summedCalibratorWrapper <- function(data, calcurve=NULL, plot=TRUE){
 
 	# data: data.frame of 14C dates. Requires 'age' and 'sd' and optional datingType
 	# calcurve: the object intcal13 loaded from intcal13.RData, or any other calibration curve
@@ -434,6 +434,7 @@ summedCalibratorWrapper <- function(data, calcurve=intcal20, plot=TRUE){
 	# function to easily plot a calibrated Summed Probability Distribution from 14C dates
 	# takes care of choosing a sensible date and interpolation increments range automatically
 
+	if(is.null(calcurve))calcurve <- intcal20
 	if(nrow(data)==0)return(NULL)
  	if(checkDataStructure(data)=='bad')stop()
 	data <- checkDatingType(data)
@@ -485,14 +486,14 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 	cond <- nrow(data)>0
 	if(cond){
 
-		# generate a calibrated PD for each date in the phase
+		# generate a calibrated PD for dates
 		calrange <- estimateDataDomain(data, calcurve)
 		inc <- 5
 		if(model=='norm' & min(p2)<5)inc <- 1 # sigma values below the resolution are silly
 		CalArray <- makeCalArray(calcurve, calrange, inc)
 		PD <- dateCalibrator(data, CalArray)
 
-		# calculate the likelihoods for each phase, across the full parameter domain
+		# calculate the likelihoods for each phase, across the full parameter domain (taken from the prior)
 		years <- as.numeric(row.names(PD))
 		lik <- matrix(1,nrow(prior.matrix),ncol(prior.matrix)) 
 		for(n in 1:nrow(data))for(c in 1:ncol(lik)){
@@ -510,7 +511,7 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 				}
 			}
 	}
-
+	
 	posterior <- prior.matrix * lik
 	posterior <- posterior/sum(posterior)
 
@@ -518,7 +519,7 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 	mean.p1 <- round(sum(p1 * rowSums(posterior)))
 	mean.p2 <- round(sum(p2 * colSums(posterior)))
 	res <- list(PD=PD, posterior=posterior, mean.p1=mean.p1, mean.p2=mean.p2)
-	par.names <- strsplit(model.options$pars[model.options$names==model],split=', ')[[1]]
+	par.names <- strsplit(as.character(model.options$pars[model.options$names==model]),split=', ')[[1]]
 	names(res)[3:4] <- par.names	
 
 	# plotting if required

@@ -2,7 +2,7 @@
 \alias{phaseModel} 
 \title{Posterior parameter estimation of a phase model} 
 \description{Calibrates 14C dates in a phase and calculates joint posterior parameter probabilities and point estimates (weighted mean) of a simple parameteric phase model}
-\usage{phaseModel(data, calcurve, prior.matrix, plot = FALSE)}
+\usage{phaseModel(data, calcurve, prior.matrix, model, plot = FALSE)}
 \arguments{
   \item{data}{
 	A dataframe of 14C dates. Requires 'age' and 'sd'.
@@ -12,6 +12,9 @@
 	}
 	\item{prior.matrix}{
 	A matrix of prior probabilities of the two model parameters. Row names and col names are the parameter values.
+	}
+	\item{model}{
+	Specify the model used for the phase distribution. Choose from 'norm', 'ellipse'
 	}
   \item{plot}{
 	By default (TRUE) will plot the calibrated 14C dates, the posterior probability surface of the parameters, and the model using the (weighted) mean posterior point esimates.
@@ -32,7 +35,7 @@
 	sd <- rep(25,N)
 	data <- data.frame(age,sd)
 
-	# specify the prior probabilities of the parameter values in a matrix
+	# specify the prior probabilities of the parameter values of a gaussian model in a matrix
 	mu.range <- c(5500,7000)
 	sigma.range <- c(5,700)
 	prior.matrix <- matrix(1,150,150); prior.matrix <- prior.matrix/sum(prior.matrix)
@@ -40,5 +43,5 @@
 	colnames(prior.matrix) <- seq(min(sigma.range),max(sigma.range),length.out=ncol(prior.matrix))
 
 	# generate the posterior parameter probabilities
-	pm <- phaseModel(data, calcurve, prior.matrix, plot=TRUE)
+	pm <- phaseModel(data, calcurve, prior.matrix, model='norm', plot=TRUE)
 	}
