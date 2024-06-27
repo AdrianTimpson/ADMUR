@@ -4,13 +4,13 @@
 \description{
 	Probability Density Function of the semi-ellipse
 	\loadmathjax }
-\usage{dellipse(x, min, max)}
+\usage{dellipse(x, min, duration)}
 \arguments{
   \item{x}{
 	Vector of values at which to calculate the pdf.
 	}
-  \item{min, max}{
-	lower and upper limits of the distribution. Must be finite.
+  \item{min, duration}{
+	min is the lower limit of the distribution. Therefore min plus duration is the upper limit of the distribution.  Must be finite.
 	}
 }
 \value{
@@ -21,7 +21,7 @@ The pdf of the semi-ellipse (the top half of an ellipse) is defined as:  \mjseqn
 	}
 \examples{
 	x <- seq(1:500)
-	y <- dellipse(x, min = 100, max=300)
+	y <- dellipse(x, min = 100, duration=200)
 	plot(x,y,type='l')
 	}
 

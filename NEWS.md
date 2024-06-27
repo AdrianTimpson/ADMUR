@@ -9,6 +9,9 @@
 
 ### Version: 1.0.3.9005
 
+## 2024-06-27
+* Major speedup implemeted in phaseModel.
+
 ## 2024-06-13
 * Ellipsoid model added to phaseModel.
 

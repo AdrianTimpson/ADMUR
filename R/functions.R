@@ -462,11 +462,11 @@ return(SPD)}
 getPhaseModelChoices <- function(){
 	names <- c('uniform','norm','cauchy','ellipse')
 	n.pars <- c(2,2,2,2)
-	pars <- c('min, max','mu, sigma','location, scale','min, max')
+	pars <- c('min, max','mu, sigma','location, scale','min, duration')
 	description <- c(	'Uniform PDF beween min and max',
 						'Gaussian PDF',
 						'Cauchy PDF',
-						'Semi-ellipse PDF, i.e. an arch, between min and max')
+						'Semi-ellipse PDF, i.e. an arch')
 	model.choices <- data.frame(names=names,n.pars=n.pars,pars=pars,description=description)
 return(model.choices)}
 #--------------------------------------------------------------------------------------------
@@ -480,7 +480,7 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 
 	p1 <- as.numeric(row.names(prior.matrix))
 	p2 <- as.numeric(colnames(prior.matrix))
-	lik <- 1
+	loglik <- 0
 	PD <- NA
 
 	cond <- nrow(data)>0
@@ -493,27 +493,32 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 		CalArray <- makeCalArray(calcurve, calrange, inc)
 		PD <- dateCalibrator(data, CalArray)
 
-		# calculate the likelihoods for each phase, across the full parameter domain (taken from the prior)
+		# initialise the loglik matrix. Domain taken from the priors.
 		years <- as.numeric(row.names(PD))
-		lik <- matrix(1,nrow(prior.matrix),ncol(prior.matrix)) 
-		for(n in 1:nrow(data))for(c in 1:ncol(lik)){
+		loglik <- matrix(0,nrow(prior.matrix),ncol(prior.matrix)) 
 
-			if(model=='norm'){
-				mu <- p1
-				sigma <- p2
-				lik[,c] <- lik[,c] * colSums(matrix(dnorm(rep(years,length(mu)),rep(mu,each=length(years)),sigma[c]),length(years),length(mu))*PD[,n])
-				}
-
-			if(model=='ellipse'){
-				min <- p1
-				max <- p2
-				lik[,c] <- lik[,c] * colSums(matrix(dellipse(rep(years,length(min)),rep(min,each=length(years)),max[c]),length(years),length(min))*PD[,n])
+		# calculate the PD of the years for each parameter combo, once only, before weighting by c14 date PD
+		dmat <- matrix(,length(years),nrow(loglik)*ncol(loglik))
+		count <- 0
+		if(model=='norm')fnc <- dnorm
+		if(model=='ellipse')fnc <- dellipse	
+		for(c in 1:ncol(loglik)){
+			for(r in 1:nrow(loglik)){
+				count <- count + 1
+				dmat[,count] <- fnc(years, p1[r], p2[c])
 				}
 			}
-	}
-	
-	posterior <- prior.matrix * lik
-	posterior <- posterior/sum(posterior)
+
+		# calculate likelihoods
+		for(n in 1:nrow(data))loglik <- loglik + log(colSums(dmat * PD[,n]))
+		}
+
+	# calculate posterior
+	# handle floating point limits using an arbitrary constant
+	log.posterior <- log(prior.matrix) + loglik
+	const <- round(max(log.posterior))
+	tmp <- exp(log.posterior - const)
+	posterior <- tmp/sum(tmp)
 
 	# return the full posterior, the calibrated dates, and useful summary stats
 	mean.p1 <- round(sum(p1 * rowSums(posterior)))
@@ -532,6 +537,7 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 		abline(h=mean.p2)
 		years <- as.numeric(row.names(PD))
 		if(model=='norm')mod <- dnorm(years, mean.p1, mean.p2)
+		if(model=='ellipse')mod <- dellipse(years, mean.p1, mean.p2)
 		plot(years, mod*inc, xlab='calBP',ylab='PD', type='l',lwd=2, bty='n', xlim=rev(range(years)),ylim=c(0,max(mod)*inc),main=paste('Phase model using weighted mean posteriors:',par.names[1],'=',mean.p1, par.names[2],'=',mean.p2))
 		}
 return(res)}
@@ -1039,9 +1045,10 @@ powerPDF <- function(x,min,max,b,c){
 	pdf <- num/denom
 return(pdf)}
 #----------------------------------------------------------------------------------------------
-dellipse <- function(x,min,max){
-	radius <- (max-min)/2
-	tmp <- radius^2 - (x-((max+min)/2))^2
+dellipse <- function(x,min,duration){
+	radius <- duration/2
+	centre <- min + radius
+	tmp <- radius^2 - (x-centre)^2
 	tmp[tmp<0] <- 0
 	num <- sqrt(tmp)
 	denom <- 0.5 * pi * radius^2
