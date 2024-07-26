@@ -830,13 +830,14 @@ return(dates)}
 #--------------------------------------------------------------------------------------------
 estimateDataDomain <- function(data, calcurve){
 	
-	min.c14 <- min(data$age - 4*data$sd)
-	max.c14 <- max(data$age + 4*data$sd)
-	calcurve$min <- calcurve$C14 - 4*calcurve$error
-	calcurve$max <- calcurve$C14 + 4*calcurve$error
+	min.c14 <- min(data$age - 5*data$sd)
+	max.c14 <- max(data$age + 5*data$sd)
+	calcurve$min <- calcurve$C14 - 5*calcurve$error
+	calcurve$max <- calcurve$C14 + 5*calcurve$error
 
-	min.year <- max(calcurve$cal[calcurve$min<max.c14])
-	max.year <- min(calcurve$cal[calcurve$max>min.c14])
+	min.year <- min(calcurve$cal[calcurve$min>min.c14 | calcurve$max>max.c14])
+	max.year <- max(calcurve$cal[calcurve$min<min.c14 | calcurve$max<max.c14])
+
 
 return(c(min.year, max.year))}
 #--------------------------------------------------------------------------------------------
