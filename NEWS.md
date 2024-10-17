@@ -9,6 +9,7 @@
 
 ### Version: 1.0.3.9005
 
+
 ## 2024-06-27
 * Major speedup implemeted in phaseModel.
 
@@ -19,7 +20,7 @@
 * phaseModel function added.
 
 ## 2024-05-01
-* dateCalibration function added.
+* dateCalibrator function added.
 
 ## 2024-04-30
 * Major speed up for estimateDataDomain function

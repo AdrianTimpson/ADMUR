@@ -384,7 +384,7 @@ dateCalibrator <- function(data, CalArray){
 	for(n in 1:nrow(data))result[,n] <- internalCalibrator(data[n,], CalArray)$prob
 
 	row.names(result) <- CalArray$cal
-	names(result) <- NULL
+	# names(result) <- NULL
 return(result)}
 #--------------------------------------------------------------------------------------------	
 phaseCalibrator <- function(data, CalArray, width = 200, remove.external = FALSE){
