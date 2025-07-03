@@ -11,12 +11,17 @@ output:
   logo: logo.jpg
 vignette: >
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteIndexEntry{Guide to using ADMUR}
+  %\VignetteIndexEntry{ADMUR: Ancient Demographic Modelling Using Radiocarbon }
   %\usepackage[utf8]{inputenc}
 ---
+
 <style>
 p.caption {font-size: 0.7em;}
 </style>
+
+```{r setup, include=FALSE}
+options(rmarkdown.html_vignette.check_title = FALSE)
+```
 
 **********
 
@@ -93,7 +98,7 @@ data6[1:10,]
 
 **********
 
-# 2. radiocarbon date calibration and SPDs
+# 2. Radiocarbon date calibration and SPDs
 
 Generating a single calibrated date distribution, or a Summed Probability Distribution (SPD) of several calibrated dates, requires either a two-step process to give the user full control of the date range and temporal resolution, or a simpler one step process using a wrapper function that automatically estimates a sensible date range and resolution from the dataset.
 
@@ -563,7 +568,7 @@ plotPD(spd)
 lines(mod.combo, col=cols[1], lwd=5)
 legend(x=4000, y=max(spd)*1.2,  lwd=5, col=cols[1], bty='n', legend=c('combo.sine.logistic'))
 ```
-![Example of a combination model](combination_model.png){width=680px}  
+![Example of a combination model](combo_models.png){width=680px}  
 
 **********
 

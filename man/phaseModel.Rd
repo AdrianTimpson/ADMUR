@@ -38,9 +38,18 @@
 	# specify the prior probabilities of the parameter values of a gaussian model in a matrix
 	mu.range <- c(5500,7000)
 	sigma.range <- c(5,700)
-	prior.matrix <- matrix(1,150,150); prior.matrix <- prior.matrix/sum(prior.matrix)
-	row.names(prior.matrix) <- seq(min(mu.range),max(mu.range),length.out=nrow(prior.matrix))
-	colnames(prior.matrix) <- seq(min(sigma.range),max(sigma.range),length.out=ncol(prior.matrix))
+	prior.matrix <- matrix(1,150,150)
+    prior.matrix <- prior.matrix/sum(prior.matrix)
+    row.names(prior.matrix) <- seq(
+       from = min(mu.range),
+       to = max(mu.range),
+       length.out = nrow(prior.matrix)
+    )
+	colnames(prior.matrix) <- seq(
+           from = min(sigma.range),
+           to = max(sigma.range),
+           length.out=ncol(prior.matrix)
+        )
 
 	# generate the posterior parameter probabilities
 	pm <- phaseModel(data, calcurve, prior.matrix, model='norm', plot=TRUE)
