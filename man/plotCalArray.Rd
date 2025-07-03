@@ -16,6 +16,7 @@
 \examples{
 \donttest{
 	# generate a CalArray of the intcal20 curve covering 5500 calBP to 6000 calBP
+    data(intcal20)
 	x <- makeCalArray( calcurve = intcal20, calrange = c(5500,6000), inc = 1 )
 	plotCalArray(x)
 	}
