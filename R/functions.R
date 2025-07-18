@@ -520,10 +520,21 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 	tmp <- exp(log.posterior - const)
 	posterior <- tmp/sum(tmp)
 
+	# Maximum a posteriori (MAP)
+	# Deal with bizarre cases where there isnt a unique solution, e.g. uniform prior with no data??
+	max.mat <- posterior==max(posterior)
+	if(sum(max.mat)==1){
+		map.p1 <- round(as.numeric(names(which(rowSums(max.mat)==1))))
+		map.p2 <- round(as.numeric(names(which(colSums(max.mat)==1))))
+		}
+	if(sum(max.mat)!=1){
+		map.p1 <- round(sum(p1 * rowSums(posterior)))
+		map.p2 <- round(sum(p2 * colSums(posterior)))
+		warning('no unique solution for MAP, weighted mean returned!')
+		}
+
 	# return the full posterior, the calibrated dates, and useful summary stats
-	mean.p1 <- round(sum(p1 * rowSums(posterior)))
-	mean.p2 <- round(sum(p2 * colSums(posterior)))
-	res <- list(PD=PD, posterior=posterior, mean.p1=mean.p1, mean.p2=mean.p2)
+	res <- list(PD=PD, posterior=posterior, map.p1=map.p1, map.p2=map.p2)
 	par.names <- strsplit(as.character(model.options$pars[model.options$names==model]),split=', ')[[1]]
 	names(res)[3:4] <- par.names	
 
@@ -532,13 +543,13 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 		par(mfrow=c(1,3))
 		plotPD(PD)
 		image(posterior,x=as.numeric(row.names(posterior)), y=as.numeric(colnames(posterior)),xlab=par.names[1],ylab=par.names[2], main='Joint posterior parameters')
-		points(x=mean.p1, y=mean.p2, pch=16, cex=2)
-		abline(v=mean.p1)
-		abline(h=mean.p2)
+		points(x=map.p1, y=map.p2, pch=16, cex=2)
+		abline(v=map.p1)
+		abline(h=map.p2)
 		years <- as.numeric(row.names(PD))
-		if(model=='norm')mod <- dnorm(years, mean.p1, mean.p2)
-		if(model=='ellipse')mod <- dellipse(years, mean.p1, mean.p2)
-		plot(years, mod*inc, xlab='calBP',ylab='PD', type='l',lwd=2, bty='n', xlim=rev(range(years)),ylim=c(0,max(mod)*inc),main=paste('Phase model using weighted mean posteriors:',par.names[1],'=',mean.p1, par.names[2],'=',mean.p2))
+		if(model=='norm')mod <- dnorm(years, map.p1, map.p2)
+		if(model=='ellipse')mod <- dellipse(years, map.p1, map.p2)
+		plot(years, mod*inc, xlab='calBP',ylab='PD', type='l',lwd=2, bty='n', xlim=rev(range(years)),ylim=c(0,max(mod)*inc),main=paste('Phase model using weighted mean posteriors:',par.names[1],'=',map.p1, par.names[2],'=',map.p2))
 		}
 return(res)}
 #--------------------------------------------------------------------------------------------
@@ -830,10 +841,10 @@ return(dates)}
 #--------------------------------------------------------------------------------------------
 estimateDataDomain <- function(data, calcurve){
 	
-	min.c14 <- min(data$age - 5*data$sd)
-	max.c14 <- max(data$age + 5*data$sd)
-	calcurve$min <- calcurve$C14 - 5*calcurve$error
-	calcurve$max <- calcurve$C14 + 5*calcurve$error
+	min.c14 <- min(data$age - 6*data$sd)
+	max.c14 <- max(data$age + 6*data$sd)
+	calcurve$min <- calcurve$C14 - 6*calcurve$error
+	calcurve$max <- calcurve$C14 + 6*calcurve$error
 
 	min.year <- min(calcurve$cal[calcurve$min>min.c14 | calcurve$max>max.c14])
 	max.year <- max(calcurve$cal[calcurve$min<min.c14 | calcurve$max<max.c14])
