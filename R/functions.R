@@ -520,18 +520,9 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 	tmp <- exp(log.posterior - const)
 	posterior <- tmp/sum(tmp)
 
-	# Maximum a posteriori (MAP)
-	# Deal with bizarre cases where there isnt a unique solution, e.g. uniform prior with no data??
-	max.mat <- posterior==max(posterior)
-	if(sum(max.mat)==1){
-		map.p1 <- round(as.numeric(names(which(rowSums(max.mat)==1))))
-		map.p2 <- round(as.numeric(names(which(colSums(max.mat)==1))))
-		}
-	if(sum(max.mat)!=1){
-		map.p1 <- round(sum(p1 * rowSums(posterior)))
-		map.p2 <- round(sum(p2 * colSums(posterior)))
-		warning('no unique solution for MAP, weighted mean returned!')
-		}
+	# Point estimates. Maximum a posteriori (MAP) is bad, as it will underestimate sigma for small N. Use weighted mean.
+	map.p1 <- round(sum(p1 * rowSums(posterior)))
+	map.p2 <- round(sum(p2 * colSums(posterior)))
 
 	# return the full posterior, the calibrated dates, and useful summary stats
 	res <- list(PD=PD, posterior=posterior, map.p1=map.p1, map.p2=map.p2)
