@@ -842,7 +842,7 @@ estimateDataDomain <- function(data, calcurve){
 	max.year <- max(calcurve$cal[calcurve$min<min.c14 | calcurve$max<max.c14])
 
 
-return(c(min.year-50, max.year+50))}
+return(c(min.year-100, max.year+100))}
 #--------------------------------------------------------------------------------------------
 SPDsimulationTest <- function(data, calcurve, calrange, pars, type, inc=5, N=20000, timeseries=NULL){
 
