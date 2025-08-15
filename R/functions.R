@@ -531,8 +531,9 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 
 	# plotting if required
 	if(plot & cond){
-		par(mfrow=c(1,3))
+		par(mfrow=c(2,2))
 		plotPD(PD)
+		image(prior.matrix,x=as.numeric(row.names(prior.matrix)), y=as.numeric(colnames(prior.matrix)),xlab=par.names[1],ylab=par.names[2], main='Joint prior parameters')
 		image(posterior,x=as.numeric(row.names(posterior)), y=as.numeric(colnames(posterior)),xlab=par.names[1],ylab=par.names[2], main='Joint posterior parameters')
 		points(x=map.p1, y=map.p2, pch=16, cex=2)
 		abline(v=map.p1)
@@ -540,7 +541,7 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 		years <- as.numeric(row.names(PD))
 		if(model=='norm')mod <- dnorm(years, map.p1, map.p2)
 		if(model=='ellipse')mod <- dellipse(years, map.p1, map.p2)
-		plot(years, mod*inc, xlab='calBP',ylab='PD', type='l',lwd=2, bty='n', xlim=rev(range(years)),ylim=c(0,max(mod)*inc),main=paste('Phase model using weighted mean posteriors:',par.names[1],'=',map.p1, par.names[2],'=',map.p2))
+		plot(years, mod*inc, xlab='calBP',ylab='PD', type='l',lwd=2, bty='n', xlim=rev(range(years)),ylim=c(0,max(mod)*inc),main=paste('Phase model:',par.names[1],'=',map.p1, par.names[2],'=',map.p2))
 		}
 return(res)}
 #--------------------------------------------------------------------------------------------
