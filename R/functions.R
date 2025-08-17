@@ -534,7 +534,7 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 		par(mfrow=c(3,2))
 		plotPD(PD)
 		image(prior.matrix,x=as.numeric(row.names(prior.matrix)), y=as.numeric(colnames(prior.matrix)),xlab=par.names[1],ylab=par.names[2], main='Joint prior parameters')
-		image(exp(loglik)),x=as.numeric(row.names(loglik)), y=as.numeric(colnames(loglik)),xlab=par.names[1],ylab=par.names[2], main='Likelihood')
+		image(exp(loglik),x=as.numeric(row.names(loglik)), y=as.numeric(colnames(loglik)),xlab=par.names[1],ylab=par.names[2], main='Likelihood')
 		image(posterior,x=as.numeric(row.names(posterior)), y=as.numeric(colnames(posterior)),xlab=par.names[1],ylab=par.names[2], main='Joint posterior parameters')
 		points(x=map.p1, y=map.p2, pch=16, cex=2)
 		abline(v=map.p1)
