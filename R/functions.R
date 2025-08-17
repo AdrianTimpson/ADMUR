@@ -531,7 +531,7 @@ phaseModel <- function(data, calcurve, prior.matrix, model, plot=FALSE){
 
 	# plotting if required
 	if(plot & cond){
-		par(mfrow=c(3,2))
+		par(mfrow=c(2,3))
 		plotPD(PD)
 		image(prior.matrix,x=as.numeric(row.names(prior.matrix)), y=as.numeric(colnames(prior.matrix)),xlab=par.names[1],ylab=par.names[2], main='Joint prior parameters')
 		image(exp(loglik),x=as.numeric(row.names(prior.matrix)), y=as.numeric(colnames(prior.matrix)),xlab=par.names[1],ylab=par.names[2], main='Likelihood')
