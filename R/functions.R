@@ -5,6 +5,7 @@
 #--------------------------------------------------------------------------------------------	
 # global variables
 # if(getRversion() >= "2.15.1")  utils::globalVariables(c())
+utils::globalVariables("intcal20")
 #--------------------------------------------------------------------------------------------
 getTruncatedModelChoices <- function(){
 	# Required in several functions, so avoids duplication if others are added to the package

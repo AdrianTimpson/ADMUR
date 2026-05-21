@@ -4,7 +4,7 @@
 \description{
 	Lists currently available models for the PDF of an archaeological phase, the number of parameters, and a brief description
 	\loadmathjax }
-\usage{getTruncatedModelChoices()}
+\usage{getPhaseModelChoices()}
 
 \details{
 
